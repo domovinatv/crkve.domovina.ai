@@ -1,0 +1,22 @@
+.venv/
+__pycache__/
+*.pyc
+.python-version
+.pytest_cache/
+.DS_Store
+.env
+
+# SQLite katalog — regenerira se iz izvora (`make all`)
+data/crkve.db
+data/crkve.db-journal
+data/crkve.db-wal
+data/crkve.db-shm
+# Keš sirovih odgovora izvora (data.gov.hr / Overpass / Wikidata / Nominatim)
+data/raw/
+
+# .claude/ je lokalan OSIM dijeljenih slash komandi. Git ne može re-inkludati
+# fajl ako je roditeljski DIREKTORIJ ignoriran, pa ignoriramo sadržaj.
+.claude/*
+!.claude/commands/
+.claude/commands/*
+!.claude/commands/*.md

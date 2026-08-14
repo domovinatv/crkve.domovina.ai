@@ -1,0 +1,57 @@
+Data License — ODbL 1.0 (izvedeni katalog) + CC-BY 4.0 (originalni doprinos)
+
+Copyright (c) 2026 Matija Stepanić / DOMOVINA
+
+VAŽNO: ovaj katalog je izveden (derivative / "Produced Work" u smislu ODbL)
+iz više izvora, od kojih je najveći OpenStreetMap. Zato NIJE moguće cijeli
+skup staviti pod čisti CC-BY kao kod sestrinskog projekta klubovi.domovina.ai.
+
+  - Geometrija i atributi porijeklom iz OpenStreetMapa (lat/lng, osm_type,
+    osm_id, tlocrti, kontakt tagovi) ostaju pod **ODbL 1.0**
+    (https://opendatacommons.org/licenses/odbl/1-0/). Ako redistribuirate
+    izvedenu bazu, morate zadržati ODbL i pripisati "© OpenStreetMap
+    contributors".
+  - Sve ostalo što je nastalo u ovom repozitoriju — shema, slugovi, parsani
+    titulari, klasifikacija tipova, matchevi između izvora, statistike —
+    licencirano je pod **CC-BY 4.0**
+    (https://creativecommons.org/licenses/by/4.0/).
+
+Predložena atribucija:
+    "DOMOVINA Crkve — crkve.domovina.ai; podaci © OpenStreetMap contributors
+     (ODbL), Ministarstvo pravosuđa i uprave RH, Ministarstvo kulture i
+     medija RH, Wikidata (CC0)."
+
+Izvori i njihovi uvjeti
+-----------------------
+
+  - **OpenStreetMap** (Overpass API) — `amenity=place_of_worship` i srodni
+    tagovi. © OpenStreetMap contributors, **ODbL 1.0**. Ovo je jedini izvor
+    koji nameće share-alike na izvedenu bazu.
+
+  - **data.gov.hr — Evidencija pravnih osoba Katoličke Crkve u RH**
+    (Ministarstvo pravosuđa i uprave). Objavljeno kao otvoreni podatak;
+    ~2100 pravnih osoba, od toga ~1560 župa (OIB, sjedište, biskupija).
+
+  - **data.gov.hr — Evidencija vjerskih zajednica u RH**
+    (Ministarstvo pravosuđa i uprave). Vjerske zajednice + njihovi
+    organizacijski oblici (crkvene općine, parohije, džemati).
+
+  - **data.gov.hr — Registar kulturnih dobara RH**
+    (Ministarstvo kulture i medija). Zaštićena sakralna graditeljska
+    baština — oznaka dobra, opis, vrijeme nastanka.
+
+  - **Wikidata** — SPARQL endpoint. Sadržaj Wikidate je **CC0** (javno
+    dobro): koordinate, slike na Commonsu, poveznice na Wikipediju.
+
+  - **Nominatim / OpenStreetMap** — geokodiranje sjedišta župa. ODbL, uz
+    poštivanje usage policyja (1 req/s, identificiran User-Agent).
+
+Ovaj repozitorij ne redistribuira sirove izvore. Skripte u `scripts/`
+dohvaćaju ih u runtimeu s gore navedenih javnih endpointa i grade lokalni
+katalog; u git ulaze samo kod i izvedeni exporti.
+
+Ispravci i uklanjanje
+---------------------
+Katalog opisuje javne građevine i javno registrirane pravne osobe. Ako je
+neki zapis netočan ili ne bi smio biti javan, otvorite issue na repozitoriju
+i bit će ispravljen ili uklonjen.
