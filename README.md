@@ -62,10 +62,10 @@ Hrvatskoj i tko ih drži", bez ručnog prepisivanja iz PDF šematizama.
 | … s koordinatama | 2 928 | 98,3 % |
 | Biskupija, eparhija i vjerskih zajednica | 70 | |
 | … s telefonom (Places) | 1 064 | |
-| … s webom (Places) | 876 | |
+| … s webom (Places) | 875 | |
 | Zaštićena baština bez para u OSM-u | 923 | |
 | **Crkava s neovisno potvrđenom lokacijom** (Places) | **1 083** | 94 % župnih |
-| Geo konflikata za ručni pregled | 39 | |
+| Geo konflikata za ručni pregled | 40 | |
 
 ### Po tipu objekta
 
@@ -143,7 +143,7 @@ ne mogu, **iz istog poziva**:
 
 1. **Preciziranje župa.** 1 652 župe ležale su na težištu naselja jer im nije
    nađena matična crkva — to je točnost sela, ne adrese. Places je **1 005**
-   podigao na razinu zgrade i donio **1 064 telefona i 876 web adresa** kojih u
+   podigao na razinu zgrade i donio **1 064 telefona i 875 web adresa** kojih u
    državnoj evidenciji uopće nema. Pokrivenost koordinatama: 94,1 % → 98,3 %.
 2. **Nezavisna provjera matchera.** Za 1 151 župu koja JEST spojena na crkvu
    usporedi se Places točka s tom crkvom. Places nije sudjelovao u matchanju,
@@ -152,10 +152,17 @@ ne mogu, **iz istog poziva**:
    `data/exports/geo-konflikti.csv` za ručni pregled (ništa se ne mijenja samo
    od sebe); između → ni potvrda ni konflikt.
 
-   **Rezultat: 1 083 od 1 151 spoja potvrđeno (94 %), 39 za pregled.** Pregled
-   pokazuje da ni ta 39 uglavnom nisu greške matchera nego druga zgrada iste
+   **Rezultat: 1 083 od 1 151 spoja potvrđeno (94 %), 40 za pregled.** Pregled
+   pokazuje da ni tih 40 uglavnom nisu greške matchera nego druga zgrada iste
    župe — župni ured (Vrana, 837 m), pastoralni centar (Korčula, 1,7 km),
    samostan umjesto crkve. Zato se ne diraju automatski.
+
+   **Sidro je težište naselja, namjerno NE crkva koju provjeravamo.** Crkva bi
+   bila točnije sidro, ali bi provjeru učinila kružnom: rezultat koji
+   proturječi našem matchu bio bi odbačen prije nego postane konflikt.
+   Provjereno oboje — s crkvom kao sidrom 1 083 potvrde i 39 konflikata, s
+   naseljem 1 083 i 40. Razlika je zanemariva, ali samo je druga brojka
+   poštena.
 
 Rezultat se ne primjenjuje slijepo: Text Search **uvijek** nešto vrati, pa se
 traži sakralni tip objekta (ili vrlo sličan naziv) **i** poklapanje županije
@@ -354,7 +361,13 @@ zapis → otvorite issue.
 - **121 župa** precizirana Placesom i dalje je >5 km od svog naselja — to su
   višeznačna imena naselja (dvije Privlake, dvoje Selca) gdje sidro nije bilo
   određeno pa distance-filtar nije mogao raditi.
-- **39 geo konflikata** čeka ručni pregled (`data/exports/geo-konflikti.csv`).
+- **40 geo konflikata** čeka ručni pregled (`data/exports/geo-konflikti.csv`).
+- **`zupe.geojson` se šalje na kartu, ali ga nijedan sloj još ne čita** —
+  stoji kao javni podatkovni endpoint. Sloj za župe (npr. one bez matchirane
+  crkve) bio bi sljedeći logičan korak.
+- **4 crkve dijele `wikidata_id` s vlastitim samostanskim kompleksom** — to je
+  tako tagirano u OSM-u (crkva i samostan su dva objekta, jedan Wikidata
+  entitet). Nije duplikat i ne smije se dedupati.
 - **Zaseban frontend** `crkve.domovina.ai` — po uzoru na
   `../klubovi.domovina.ai/frontend` (React PWA na Cloudflare Pages). Zasad
   postoji samo sloj na zajedničkoj karti.

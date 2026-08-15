@@ -146,17 +146,37 @@ def run(limit: int | None = None, verify_only: bool = False) -> None:
 
 
 def _anchor(p) -> tuple[float, float] | None:
-    """Najbolja poznata pozicija župe, po padajućoj točnosti."""
-    if p["church_lat"] is not None:
-        return p["church_lat"], p["church_lng"]
-    if p["lat"] is not None:
-        return p["lat"], p["lng"]
+    """Sidro za odbacivanje odlutalih Places rezultata — **težište naselja**.
+
+    Sidro NE SMIJE biti crkva na koju smo župu spojili, koliko god ona bila
+    točnija. Ako je sidro upravo objekt koji provjeravamo, svaki Places
+    rezultat koji mu proturječi biva odbačen prije nego postane konflikt, pa
+    "nezavisna provjera" samo potvrđuje samu sebe. Mjereno: s crkvom kao
+    sidrom 1083/1151 potvrde i 39 konflikata; s naseljem kao sidrom brojke
+    padaju, ali su istinite.
+
+    Težište naselja dolazi iz DGU granica i ne zna ništa o našem matchanju,
+    pa je jedino pošteno sidro. Ako ime naselja nije jednoznačno
+    (dvije Privlake), sidra nema — tada filtriranje preuzima županija, koju
+    scripts/12 popunjava prostorno prije ovog koraka.
+    """
     return geo_hr.settlement_centroid(p["city"], p["county"])
 
 
 def _verify(conn, p, hit, stats, verify_only: bool) -> None:
     """Župa ima matchiranu crkvu — usporedi je s Placesom."""
     d = haversine_m(p["church_lat"], p["church_lng"], hit["lat"], hit["lng"])
+
+    # Skini raniji ishod za ovu župu prije novog. Bez toga ponovni `make
+    # places` (npr. nakon promjene pragova) duplicira konflikte i ostavlja
+    # `geo_verified = 1` zaglavljen iz prošlog runa.
+    conn.execute("DELETE FROM geo_conflicts WHERE parish_id = ?", (p["id"],))
+    if not verify_only:
+        conn.execute(
+            "UPDATE churches SET geo_verified = 0, geo_verify_m = NULL WHERE id = ?",
+            (p["church_id"],),
+        )
+
     if d <= VERIFY_OK_M:
         stats["potvrdjeno"] += 1
         if not verify_only:

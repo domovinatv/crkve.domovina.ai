@@ -59,6 +59,12 @@ ORDER BY id
 """
 
 
+# Zastavice 0/1 kod kojih je 0 isto što i "nema": karta ih čita kao
+# `["==", ["get", …], 1]` odnosno JS falsy, pa se odsutne i nulte ponašaju
+# identično. Izbacivanje nula štedi ~250 KB (11 700 polja) na 4 MB datoteke.
+_DROP_IF_ZERO = {"is_parish_church", "geo_verified", "unesco"}
+
+
 def _fc(rows) -> dict:
     feats = []
     for r in rows:
@@ -74,6 +80,8 @@ def _fc(rows) -> dict:
                     pass
             if v is None or v == "":
                 continue          # izostavi prazno — GeoJSON je i tako velik
+            if k in _DROP_IF_ZERO and not v:
+                continue
             props[k] = v
         feats.append({
             "type": "Feature",

@@ -112,9 +112,20 @@ u `src/lib/types.ts`. Deploy: `cd ../karta-hrvatske/apps/karta-web && npm run de
   Istri, 282 km). Filtar po županiji to NE hvata jer 1202 župe nemaju upisanu
   županiju — zato `scripts/12` sad prostorno popunjava `parishes.county` PRIJE
   Placesa. Redoslijed 12 → 13 je zbog toga obavezan.
-- **Konflikti nisu greške matchera.** Od 39 preostalih, većina je druga zgrada
+- **Konflikti nisu greške matchera.** Od 40 preostalih, većina je druga zgrada
   iste župe (župni ured, pastoralni centar, samostan). Zato `geo_conflicts`
   ništa ne mijenja automatski — to je red za pregled, ne popravak.
+- **Sidro NE SMIJE biti crkva koju provjeravamo** (`_anchor` vraća težište
+  naselja). S crkvom kao sidrom provjera postaje kružna: rezultat koji joj
+  proturječi odbaci se prije nego postane konflikt. Izmjereno oboje —
+  1083/39 s crkvom, 1083/40 s naseljem; razlika je zanemariva, ali samo je
+  druga brojka poštena tvrdnja o „nezavisnoj provjeri".
+- **`13_places_parishes` mora biti ponovljiv** — briše raniji konflikt i
+  resetira `geo_verified` za župu prije novog ishoda. Bez toga drugi run bez
+  rebuilda duplicira konflikte i ostavlja zaglavljene potvrde.
+- **4 crkve dijele `wikidata_id` sa svojim samostanom** — OSM tako tagira
+  (crkva i samostanski kompleks = dva objekta, jedan Wikidata entitet).
+  Očekivano, nije duplikat.
 - **Places 403 ima tri različita uzroka** (IP restrikcija ključa / referrer
   restrikcija / API nije uključen) i tri različita rješenja —
   `places._explain_403` ih razlikuje da se ne gubi vrijeme na pogrešnom.
