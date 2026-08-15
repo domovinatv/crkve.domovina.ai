@@ -152,6 +152,12 @@ u `src/lib/types.ts`. Deploy: `cd ../karta-hrvatske/apps/karta-web && npm run de
 - **Licenca podataka nije čisti CC-BY** — OSM je ODbL i nameće share-alike na
   izvedenu bazu. Vidi `LICENSE-DATA`.
 
+## Zašto je nešto tako — pozadina odluka
+Mjerenja koja su odredila pragove, alternative koje su probane pa odbačene
+(Nominatim, model s jednom tablicom, crkva kao sidro) i zamke koje su koštale
+vremena: **`docs/2026-08-15-izgradnja-kataloga.md`**. Ako mijenjaš matcher ili
+Places validaciju, pročitaj to prije nego "popraviš" nešto što je namjerno.
+
 ## Otvoreno / sljedeći koraci
 - **`heritage_unmatched`** — ostatak zaštićene baštine bez para (izvozi se u
   `data/exports/bastina-nespojeno.csv`). Dio su ruševine i objekti kojih u

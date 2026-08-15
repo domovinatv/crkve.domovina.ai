@@ -350,6 +350,12 @@ parsani titulari, klasifikacija, matchevi). Detalji i atribucija izvora:
 Katalog opisuje javne građevine i javno registrirane pravne osobe. Netočan
 zapis → otvorite issue.
 
+## Pozadina odluka
+
+Mjerenja, odbačene alternative i zamke iz izgradnje — zašto matcher radi baš
+tako, zašto Nominatim nije upotrijebljen, kako je Places prvo štetio pa
+popravljen: [`docs/2026-08-15-izgradnja-kataloga.md`](docs/2026-08-15-izgradnja-kataloga.md).
+
 ## Što još fali
 
 - **923 zaštićena objekta** nemaju para u OSM-u — dio su ruševine, dio posao
