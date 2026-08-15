@@ -106,12 +106,24 @@ u `src/lib/types.ts`. Deploy: `cd ../karta-hrvatske/apps/karta-web && npm run de
   i trgovine iz istog mjesta. `places.pick()` traži sakralni `types` (ili vrlo
   sličan naziv) **i** poklapanje županije nad DGU granicama. Bbox oko HR je
   pregrub: obuhvaća i Ljubljanu i Sarajevo.
+- **Sidro (`anchor`) je najvažniji filtar u `places.pick()`** — rezultat mora
+  biti unutar 15 km od poznate pozicije župe. Bez njega je 24 % preciziranih
+  župa završilo >5 km od vlastitog naselja („BEBRINA" u Slavoniji → Brseč u
+  Istri, 282 km). Filtar po županiji to NE hvata jer 1202 župe nemaju upisanu
+  županiju — zato `scripts/12` sad prostorno popunjava `parishes.county` PRIJE
+  Placesa. Redoslijed 12 → 13 je zbog toga obavezan.
+- **Konflikti nisu greške matchera.** Od 39 preostalih, većina je druga zgrada
+  iste župe (župni ured, pastoralni centar, samostan). Zato `geo_conflicts`
+  ništa ne mijenja automatski — to je red za pregled, ne popravak.
 - **Places 403 ima tri različita uzroka** (IP restrikcija ključa / referrer
   restrikcija / API nije uključen) i tri različita rješenja —
   `places._explain_403` ih razlikuje da se ne gubi vrijeme na pogrešnom.
-  Stanje 2026-08-15: ključevi u `../klubovi.domovina.ai` i
-  `../rodjendaonice.domovina.ai` su blokirani (prvi PERMISSION_DENIED, drugi
-  IP restrikcija za projekt 738176355812), pa `make places` još nije pokrenut.
+  Stanje 2026-08-15: ključ `../rodjendaonice.domovina.ai` (projekt
+  **738176355812**, ključ „Maps Platform API Key", uid `d126c763-bd0a-4a21-…`)
+  je odblokiran dodavanjem IP-a u allowlist — u njoj su sad `89.201.137.96`
+  (stari, NE brisati) i `89.164.104.204`. `--allowed-ips` zamjenjuje cijelu
+  listu, pa kod idućeg IP-a navedi SVE. Ključ `../klubovi.domovina.ai` i dalje
+  vraća PERMISSION_DENIED (Places API (New) nije uključen na tom projektu).
 - **Validacija Placesa živi u `src/places.py`, ne u skripti** — modul čije ime
   počinje brojkom (`13_…`) ne može se importati u testove.
 - **Nominatim je neupotrebljiv za masovno geokodiranje** (javni endpoint ~5 s

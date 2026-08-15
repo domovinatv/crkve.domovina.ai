@@ -216,6 +216,16 @@ class PlacesClient:
 
 NAME_MIN = 70  # minimalna sličnost naziva kad tip rezultata nije sakralni
 
+# Najveća dopuštena udaljenost rezultata od već poznate pozicije župe.
+# Mjereno: bez ovog ograničenja 268 od 1117 preciziranih župa (24 %) završi
+# >5 km od vlastitog naselja, jer Text Search rado vrati istoimenu crkvu s
+# druge strane Hrvatske ("ŽUPA SV. MARIJE MAGDALENE, BEBRINA" u Slavoniji →
+# crkva u Brseču u Istri, 282 km). Filtar po županiji to ne hvata sam jer
+# 1202 župe u evidenciji uopće nemaju županiju.
+# 15 km je velikodušno: župa se prostire preko nekoliko naselja, ali nikad
+# preko pola države.
+MAX_ANCHOR_M = 15_000.0
+
 
 def queries_for(name: str, city: str | None, address: str | None) -> list[str]:
     """Kandidat-upiti za jednu župu, od najspecifičnijeg prema najopćenitijem."""
@@ -236,13 +246,26 @@ def queries_for(name: str, city: str | None, address: str | None) -> list[str]:
     return [q for q in out if not (q in seen or seen.add(q))]
 
 
-def pick(results: list[dict], parish_name: str, county: str | None) -> dict | None:
+def pick(
+    results: list[dict],
+    parish_name: str,
+    county: str | None,
+    anchor: tuple[float, float] | None = None,
+    max_m: float = MAX_ANCHOR_M,
+) -> dict | None:
     """Prvi rezultat koji je uvjerljivo TAJ objekt, ili None.
 
-    Text Search uvijek vrati nešto — bez ova dva filtra u katalog uđu kafići i
-    trgovine iz istog mjesta:
+    Text Search uvijek vrati nešto — bez ova tri filtra u katalog uđu kafići
+    iz istog mjesta i istoimene crkve s druge strane države:
+
       1. sakralni `types`, ili vrlo sličan naziv ako tipa nema;
-      2. ista županija (Places zna odlutati u susjedno istoimeno mjesto).
+      2. **udaljenost od `anchor`** (poznata pozicija župe: koordinate njezine
+         crkve ili težište njezina naselja) — najjači filtar, jer ne ovisi o
+         tome ima li župa upisanu županiju;
+      3. ista županija, kad je poznata.
+
+    `anchor` je neobavezan samo zato da se `pick` može testirati izolirano;
+    pozivatelj ga treba dati uvijek kad ga ima.
     """
     from . import geo_hr  # lokalni import: geo_hr učitava 21 MB granica
 
@@ -251,6 +274,8 @@ def pick(results: list[dict], parish_name: str, county: str | None) -> dict | No
         if not r.get("is_sacral"):
             if fuzz.token_set_ratio(want, norm_key(r.get("name") or "")) < NAME_MIN:
                 continue
+        if anchor and haversine_m(anchor[0], anchor[1], r["lat"], r["lng"]) > max_m:
+            continue
         place = geo_hr.locate(r["lat"], r["lng"])
         if county and place.county and place.county != county:
             continue

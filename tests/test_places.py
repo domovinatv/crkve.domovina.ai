@@ -123,3 +123,45 @@ def test_pick_takes_first_acceptable_not_first_result():
 def test_pick_without_county_skips_location_check():
     # Ako župa nema županiju, prostorni filtar se ne smije primijeniti.
     assert pick([_res("Crkva sv. Marka")], "ŽUPA SV. MARKA", None) is not None
+
+
+# --- anchor guard -----------------------------------------------------------
+# Najvažniji filtar: bez njega je 24 % preciziranih župa završilo >5 km od
+# vlastitog naselja jer Places vrati istoimenu crkvu s druge strane države.
+
+BEBRINA = (45.14, 17.95)   # Slavonija
+BRSEC = (45.18, 14.23)     # Istra, ~280 km zapadnije
+
+
+def test_anchor_rejects_far_result():
+    hit = pick([_res("Crkva sv. Marija Magdalena", latlng=BRSEC)],
+               "ŽUPA SV. MARIJE MAGDALENE, BEBRINA", None, anchor=BEBRINA)
+    assert hit is None
+
+
+def test_anchor_accepts_nearby_result():
+    near = (BEBRINA[0] + 0.01, BEBRINA[1] + 0.01)   # ~1,4 km
+    hit = pick([_res("Crkva sv. Marija Magdalena", latlng=near)],
+               "ŽUPA SV. MARIJE MAGDALENE, BEBRINA", None, anchor=BEBRINA)
+    assert hit is not None
+
+
+def test_anchor_guard_works_without_county():
+    # Ovo je stvarni slučaj: 1202 župe nemaju županiju, pa je sidro jedini
+    # filtar koji ih štiti.
+    assert pick([_res("Crkva sv. Jurja", latlng=BRSEC)],
+                "ŽUPA SV. JURJA", None, anchor=BEBRINA) is None
+
+
+def test_anchor_skips_first_far_result_and_takes_near_one():
+    near = (BEBRINA[0] + 0.005, BEBRINA[1])
+    hits = [_res("Crkva sv. Ane", latlng=BRSEC), _res("Crkva sv. Ane", latlng=near)]
+    got = pick(hits, "ŽUPA SV. ANE", None, anchor=BEBRINA)
+    assert got is not None and got["lat"] == near[0]
+
+
+def test_no_anchor_means_no_distance_filter():
+    # Bez sidra se filtar ne primjenjuje (koristi se u testovima i kad župa
+    # nema baš nikakvu poznatu poziciju).
+    assert pick([_res("Crkva sv. Ane", latlng=BRSEC)],
+                "ŽUPA SV. ANE", None) is not None

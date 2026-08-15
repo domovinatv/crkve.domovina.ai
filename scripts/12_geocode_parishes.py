@@ -47,6 +47,8 @@ PENDING_SQL = (
 def run(nominatim: bool = False, limit: int | None = None) -> None:
     stats = Counter()
     with connect() as conn:
+        _backfill_counties(conn, stats)
+
         rows = conn.execute(PENDING_SQL).fetchall()
         if limit:
             rows = rows[:limit]
@@ -104,6 +106,30 @@ def run(nominatim: bool = False, limit: int | None = None) -> None:
     log.info("gotovo: %s", dict(stats))
     log.info("po izvoru: %s", {r["geocode_source"]: r["n"] for r in by_src})
     log.info("župa s koordinatama: %d / %d", geo, tot)
+
+
+def _backfill_counties(conn, stats: Counter) -> None:
+    """Popuni županiju svakoj župi koja već ima koordinate (od svoje crkve iz
+    scripts/11 ili od ranijeg geokodiranja).
+
+    Državna evidencija NE sadrži županiju — piše samo "Mjesto, Ulica". Bez
+    ovog prolaza 1202 župe ostanu bez `county`, a onda i filtar po županiji u
+    scripts/13 (Places) tiho ne radi ništa i propušta rezultate s druge strane
+    Hrvatske.
+    """
+    rows = conn.execute(
+        "SELECT id, lat, lng FROM parishes WHERE county IS NULL AND lat IS NOT NULL"
+    ).fetchall()
+    for r in rows:
+        place = geo_hr.locate(r["lat"], r["lng"])
+        if place.county:
+            conn.execute("UPDATE parishes SET county = ? WHERE id = ?",
+                         (place.county, r["id"]))
+            stats["zupanija_popunjena"] += 1
+    conn.commit()
+    if rows:
+        log.info("županija popunjena za %d župa (od %d bez nje)",
+                 stats["zupanija_popunjena"], len(rows))
 
 
 if __name__ == "__main__":

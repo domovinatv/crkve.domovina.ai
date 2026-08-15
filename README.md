@@ -59,9 +59,13 @@ Hrvatskoj i tko ih drži", bez ručnog prepisivanja iz PDF šematizama.
 | **Pravnih osoba** (župe, samostani, crkvene općine) | **2 979** | |
 | … katoličkih **župa** | 1 563 | |
 | … s OIB-om | 1 778 | |
-| … s koordinatama | 2 803 | 94,1 % |
+| … s koordinatama | 2 928 | 98,3 % |
 | Biskupija, eparhija i vjerskih zajednica | 70 | |
+| … s telefonom (Places) | 1 064 | |
+| … s webom (Places) | 876 | |
 | Zaštićena baština bez para u OSM-u | 923 | |
+| **Crkava s neovisno potvrđenom lokacijom** (Places) | **1 083** | 94 % župnih |
+| Geo konflikata za ručni pregled | 39 | |
 
 ### Po tipu objekta
 
@@ -137,9 +141,10 @@ Ovdje Places nije geocoder kao u sestrinskim projektima — građevine već imaj
 100 % koordinata iz OSM-a, i to tlocrte. Radi dvije stvari koje drugi izvori
 ne mogu, **iz istog poziva**:
 
-1. **Preciziranje župa.** 1 652 župe leže na težištu naselja jer im nije nađena
-   matična crkva — to je točnost sela, ne adrese. Places vraća točku na razini
-   zgrade, plus **telefon i web** kojih u državnoj evidenciji uopće nema.
+1. **Preciziranje župa.** 1 652 župe ležale su na težištu naselja jer im nije
+   nađena matična crkva — to je točnost sela, ne adrese. Places je **1 005**
+   podigao na razinu zgrade i donio **1 064 telefona i 876 web adresa** kojih u
+   državnoj evidenciji uopće nema. Pokrivenost koordinatama: 94,1 % → 98,3 %.
 2. **Nezavisna provjera matchera.** Za 1 151 župu koja JEST spojena na crkvu
    usporedi se Places točka s tom crkvom. Places nije sudjelovao u matchanju,
    pa je to stvaran drugi izvor, ne kružna provjera:
@@ -147,12 +152,26 @@ ne mogu, **iz istog poziva**:
    `data/exports/geo-konflikti.csv` za ručni pregled (ništa se ne mijenja samo
    od sebe); između → ni potvrda ni konflikt.
 
+   **Rezultat: 1 083 od 1 151 spoja potvrđeno (94 %), 39 za pregled.** Pregled
+   pokazuje da ni ta 39 uglavnom nisu greške matchera nego druga zgrada iste
+   župe — župni ured (Vrana, 837 m), pastoralni centar (Korčula, 1,7 km),
+   samostan umjesto crkve. Zato se ne diraju automatski.
+
 Rezultat se ne primjenjuje slijepo: Text Search **uvijek** nešto vrati, pa se
 traži sakralni tip objekta (ili vrlo sličan naziv) **i** poklapanje županije
 nad DGU granicama — inače se odbacuje.
 
 Opseg: **2 359 poziva** (jedan po aktivnoj pravnoj osobi), keširano po SHA
-zahtjeva pa svaki sljedeći run ne troši kvotu.
+zahtjeva pa svaki sljedeći run ne troši kvotu — ponovni run s promijenjenom
+logikom validacije stajao je 271 poziv umjesto 2 600.
+
+**Sidro je najvažniji filtar.** Rezultat mora biti unutar 15 km od već poznate
+pozicije župe (koordinate njezine crkve ili težište naselja). Bez toga je
+**24 % preciziranih župa završilo >5 km od vlastitog naselja** — Text Search
+rado vrati istoimenu crkvu s druge strane države („ŽUPA SV. MARIJE MAGDALENE,
+BEBRINA" u Slavoniji → crkva u Brseču u Istri, 282 km). Filtar po županiji to
+ne hvata sam jer 1 202 župe u evidenciji uopće nemaju upisanu županiju
+(popunjava ih `scripts/12` prostorno, prije Placesa).
 
 ⚠️ Dvije zamke: default dnevna kvota `SearchTextRequestPerDayPerProject` je
 **100** i diže se ručno u GCP konzoli; ključ s **IP restrikcijom** vraća 403
@@ -262,7 +281,7 @@ Zbog toga 923 baštinska zapisa ostaju bez para; izvoze se u
 ```bash
 uv sync                  # Python 3.13, tri ovisnosti
 make all                 # ~2 min prvi put (mrežni dohvat), ~5 s poslije
-make test                # 74 testa
+make test                # 97 testova
 ```
 
 Nema `.env`-a ni ključeva. `.env.example` postoji samo za opcionalne stvari
@@ -332,9 +351,10 @@ zapis → otvorite issue.
 - **Kontakti župa** (telefon, email, web) — nisu u državnoj evidenciji.
   Telefon i web dolaze uz `make places`; email bi išao Firecrawlom po uzoru na
   `../klubovi.domovina.ai/scripts/04_backfill.py`.
-- **`make places` još nije pokrenut** — ključevi u sestrinskim repoima su
-  blokirani (IP restrikcija / Places API nije uključen na projektu). Kod je
-  napisan i testiran do samog API poziva; treba samo ključ.
+- **121 župa** precizirana Placesom i dalje je >5 km od svog naselja — to su
+  višeznačna imena naselja (dvije Privlake, dvoje Selca) gdje sidro nije bilo
+  određeno pa distance-filtar nije mogao raditi.
+- **39 geo konflikata** čeka ručni pregled (`data/exports/geo-konflikti.csv`).
 - **Zaseban frontend** `crkve.domovina.ai` — po uzoru na
   `../klubovi.domovina.ai/frontend` (React PWA na Cloudflare Pages). Zasad
   postoji samo sloj na zajedničkoj karti.
