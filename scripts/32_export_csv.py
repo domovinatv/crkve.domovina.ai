@@ -45,8 +45,11 @@ EXPORTS = {
                titular, oib, diocese AS biskupija, community AS zajednica,
                religion AS religija, denomination AS konfesija,
                address AS adresa, city AS mjesto, county AS zupanija, lat, lng,
+               geocode_source AS izvor_koordinata,
                registry_no AS evidencijski_broj, registry_status AS status,
                registered_at AS datum_upisa, leader_title AS sluzba,
+               phone AS telefon, email, website AS web,
+               google_maps_uri AS google_karta,
                source AS izvori
         FROM parishes ORDER BY diocese, name
     """,
@@ -55,6 +58,13 @@ EXPORTS = {
                denomination AS konfesija, oib, seat AS sjediste,
                parish_count AS broj_zupa, source AS izvori
         FROM dioceses ORDER BY name
+    """,
+    "geo-konflikti.csv": """
+        SELECT parish_name AS zupa, church_name AS spojena_crkva,
+               place_name AS google_naziv, place_address AS google_adresa,
+               distance_m AS udaljenost_m,
+               our_lat, our_lng, place_lat, place_lng
+        FROM geo_conflicts ORDER BY distance_m DESC
     """,
     "bastina-nespojeno.csv": """
         SELECT heritage_id AS oznaka, name AS naziv, settlement AS naselje,
@@ -72,10 +82,13 @@ def run() -> None:
             rows = conn.execute(sql).fetchall()
             path = OUT_DIR / fname
             # utf-8-sig: Excel na Windowsu inače pojede dijakritiku.
+            if not rows:
+                # geo-konflikti.csv je prazan dok se ne pokrene `make places`;
+                # prazan file je informativniji od nepostojećeg.
+                log.info("%s: 0 redaka", fname)
+                path.write_text("", encoding="utf-8-sig")
+                continue
             with path.open("w", newline="", encoding="utf-8-sig") as fh:
-                if not rows:
-                    log.warning("%s: 0 redaka", fname)
-                    continue
                 w = csv.DictWriter(fh, fieldnames=rows[0].keys())
                 w.writeheader()
                 for r in rows:

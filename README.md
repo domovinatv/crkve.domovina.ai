@@ -130,6 +130,35 @@ spaja heuristikom (vidi „Spajanje izvora").
 844 objekta s koordinatama. Manji od OSM-a, ali nosi ono što OSM nema: sliku
 na Commonsu, poveznicu na Wikipediju, arhitekta, godinu gradnje.
 
+### Google Places API (New) — opcionalno, `make places`
+Jedini korak koji treba ključ i jedini koji košta. **Nije** u `make all`.
+
+Ovdje Places nije geocoder kao u sestrinskim projektima — građevine već imaju
+100 % koordinata iz OSM-a, i to tlocrte. Radi dvije stvari koje drugi izvori
+ne mogu, **iz istog poziva**:
+
+1. **Preciziranje župa.** 1 652 župe leže na težištu naselja jer im nije nađena
+   matična crkva — to je točnost sela, ne adrese. Places vraća točku na razini
+   zgrade, plus **telefon i web** kojih u državnoj evidenciji uopće nema.
+2. **Nezavisna provjera matchera.** Za 1 151 župu koja JEST spojena na crkvu
+   usporedi se Places točka s tom crkvom. Places nije sudjelovao u matchanju,
+   pa je to stvaran drugi izvor, ne kružna provjera:
+   `≤ 300 m` → `geo_verified = 1`; `> 750 m` → zapis u `geo_conflicts` i
+   `data/exports/geo-konflikti.csv` za ručni pregled (ništa se ne mijenja samo
+   od sebe); između → ni potvrda ni konflikt.
+
+Rezultat se ne primjenjuje slijepo: Text Search **uvijek** nešto vrati, pa se
+traži sakralni tip objekta (ili vrlo sličan naziv) **i** poklapanje županije
+nad DGU granicama — inače se odbacuje.
+
+Opseg: **2 359 poziva** (jedan po aktivnoj pravnoj osobi), keširano po SHA
+zahtjeva pa svaki sljedeći run ne troši kvotu.
+
+⚠️ Dvije zamke: default dnevna kvota `SearchTextRequestPerDayPerProject` je
+**100** i diže se ručno u GCP konzoli; ključ s **IP restrikcijom** vraća 403
+`API_KEY_IP_ADDRESS_BLOCKED` čim se promijeni javni IP. Skripta oba slučaja
+imenuje u poruci umjesto generičkog „403".
+
 ### DGU granice iz `../karta-hrvatske`
 Naselja (6 759 poligona) i JLS-ovi (556) služe za **prostornu dodjelu** naselja,
 općine i županije svakoj građevini — i za offline geokodiranje sjedišta župa
@@ -165,8 +194,10 @@ mogao izraziti filijalu.
 ## Pipeline
 
 ```bash
-make all      # cijeli lanac od nule
-make help     # popis koraka
+make all         # cijeli lanac od nule, BEZ ijednog ključa
+make places      # opcionalno: Google Places (treba GOOGLE_MAPS_API_KEY)
+make all-places  # oboje
+make help        # popis koraka
 ```
 
 ```
@@ -185,6 +216,9 @@ make help     # popis koraka
                           + filijale u istom mjestu  1 800
 12_geocode_parishes       težište naselja (offline)  1 652
                           `--nominatim` = fini prolaz (opcionalno, sporo)
+        ▼
+13_places_parishes        Google Places (OPCIONALNO, treba ključ):
+                          preciziranje župa + nezavisna provjera matchera
         ▼
 30_build_fts              FTS5, dijakritički neosjetljivo
 31_export_geojson         data/exports/{crkve,zupe}.geojson
@@ -248,6 +282,7 @@ data/exports/crkve.csv            pun izvoz, UTF-8 s BOM (Excel-friendly)
 data/exports/zupe.csv
 data/exports/biskupije.csv
 data/exports/bastina-nespojeno.csv
+data/exports/geo-konflikti.csv    prazno dok se ne pokrene `make places`
 data/exports/stats.json
 ```
 
@@ -295,7 +330,11 @@ zapis → otvorite issue.
   za bolji matcher.
 - **412 župa** nije spojeno sa svojom crkvom (od 1 563).
 - **Kontakti župa** (telefon, email, web) — nisu u državnoj evidenciji.
-  Išlo bi Firecrawlom po uzoru na `../klubovi.domovina.ai/scripts/04_backfill.py`.
+  Telefon i web dolaze uz `make places`; email bi išao Firecrawlom po uzoru na
+  `../klubovi.domovina.ai/scripts/04_backfill.py`.
+- **`make places` još nije pokrenut** — ključevi u sestrinskim repoima su
+  blokirani (IP restrikcija / Places API nije uključen na projektu). Kod je
+  napisan i testiran do samog API poziva; treba samo ključ.
 - **Zaseban frontend** `crkve.domovina.ai` — po uzoru na
   `../klubovi.domovina.ai/frontend` (React PWA na Cloudflare Pages). Zasad
   postoji samo sloj na zajedničkoj karti.

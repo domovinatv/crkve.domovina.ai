@@ -48,6 +48,12 @@ poklonac) nema župu. `dioceses` drži (nad)biskupije i nekatoličke zajednice.
   2038 sakralnih zapisa. **Nema koordinate** → spaja se heuristikom (scripts/10).
 - **Wikidata SPARQL** (CC0) — slike s Commonsa, Wikipedija, arhitekt, godina.
 - **Nominatim** — samo sjedišta župa koje nisu naslijedile koordinate crkve.
+- **Google Places (New)** — JEDINI izvor s ključem, i **nije** u `make all`
+  nego u `make places` (scripts/13). Nije geocoder za crkve (OSM je bolji,
+  daje tlocrte) nego: (a) precizira 1652 župe koje leže na težištu naselja,
+  (b) **nezavisno provjerava matcher** — usporedi Places točku župe s crkvom
+  na koju smo je spojili; ≤300 m potvrda, >750 m u `geo_conflicts`. Oboje iz
+  istog poziva; 2359 poziva ukupno, keširano.
 
 ## Pipeline
 `make all` = `init → ingest (01–05) → match (10–12) → export (30–32) →
@@ -96,6 +102,18 @@ u `src/lib/types.ts`. Deploy: `cd ../karta-hrvatske/apps/karta-web && npm run de
 - **FTS5 bez `content=`**: mjesto se indeksira kao `COALESCE(city, settlement,
   municipality)`, a external-content tablica pretpostavlja da su indeksirane
   vrijednosti identične izvornima — razišlo bi indeks i sadržaj.
+- **Places Text Search UVIJEK nešto vrati** — bez filtra u katalog uđu kafići
+  i trgovine iz istog mjesta. `places.pick()` traži sakralni `types` (ili vrlo
+  sličan naziv) **i** poklapanje županije nad DGU granicama. Bbox oko HR je
+  pregrub: obuhvaća i Ljubljanu i Sarajevo.
+- **Places 403 ima tri različita uzroka** (IP restrikcija ključa / referrer
+  restrikcija / API nije uključen) i tri različita rješenja —
+  `places._explain_403` ih razlikuje da se ne gubi vrijeme na pogrešnom.
+  Stanje 2026-08-15: ključevi u `../klubovi.domovina.ai` i
+  `../rodjendaonice.domovina.ai` su blokirani (prvi PERMISSION_DENIED, drugi
+  IP restrikcija za projekt 738176355812), pa `make places` još nije pokrenut.
+- **Validacija Placesa živi u `src/places.py`, ne u skripti** — modul čije ime
+  počinje brojkom (`13_…`) ne može se importati u testove.
 - **Nominatim je neupotrebljiv za masovno geokodiranje** (javni endpoint ~5 s
   po upitu × do 5 kandidata po župi = 10+ sati). Zamijenjen težištem naselja
   iz DGU granica: 1,5 s za sve, točnost razine mjesta. Nominatim ostaje iza

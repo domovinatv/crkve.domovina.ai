@@ -1,7 +1,7 @@
 # crkve.domovina.ai — orkestracija pipelinea. `make help` za popis.
-# Cijeli pipeline radi bez ijednog API ključa.
+# `make all` radi bez ijednog API ključa; ključ treba samo `make places`.
 
-.PHONY: help init ingest match export stats all sync-karta test clean-cache
+.PHONY: help init ingest match export stats all sync-karta places test clean-cache
 
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
@@ -21,6 +21,9 @@ match: ## spoji baštinu i župe na građevine + geokodiraj ostatak župa
 	uv run python scripts/11_match_parishes.py
 	uv run python scripts/12_geocode_parishes.py
 
+places: ## Google Places: precizne koordinate župa + nezavisna provjera (TREBA KLJUČ)
+	uv run python scripts/13_places_parishes.py $(ARGS)
+
 export: ## FTS + GeoJSON + CSV
 	uv run python scripts/30_build_fts.py
 	uv run python scripts/31_export_geojson.py
@@ -32,7 +35,9 @@ sync-karta: ## preslikaj GeoJSON u ../karta-hrvatske (gis.domovina.ai)
 stats: ## izvještaj o pokrivenosti (+ data/exports/stats.json)
 	uv run python scripts/40_stats.py
 
-all: init ingest match export sync-karta stats ## cijeli pipeline od nule
+all: init ingest match export sync-karta stats ## cijeli pipeline od nule (bez ključeva)
+
+all-places: init ingest match places export sync-karta stats ## kao `all` + Places korak
 
 test: ## pytest
 	uv run pytest -q

@@ -39,14 +39,24 @@ def run() -> None:
             "crkve_sa_zupom": q("SELECT COUNT(*) FROM churches WHERE parish_id IS NOT NULL"),
             "zupne_crkve": q("SELECT COUNT(*) FROM churches WHERE is_parish_church = 1"),
             "crkve_s_tlocrtom": q("SELECT COUNT(*) FROM churches WHERE geom_kind IN ('way','relation')"),
+            "crkve_lokacija_potvrdjena": q("SELECT COUNT(*) FROM churches WHERE geo_verified = 1"),
+            "geo_konflikti": q("SELECT COUNT(*) FROM geo_conflicts"),
             "pravne_osobe_ukupno": q("SELECT COUNT(*) FROM parishes"),
             "zupe_katolicke": q("SELECT COUNT(*) FROM parishes WHERE kind = 'zupa'"),
             "zupe_s_koordinatama": q("SELECT COUNT(*) FROM parishes WHERE lat IS NOT NULL"),
             "zupe_s_oib": q("SELECT COUNT(*) FROM parishes WHERE oib IS NOT NULL"),
+            "zupe_s_telefonom": q("SELECT COUNT(*) FROM parishes WHERE phone IS NOT NULL"),
+            "zupe_s_webom": q("SELECT COUNT(*) FROM parishes WHERE website IS NOT NULL"),
             "biskupije_i_zajednice": q("SELECT COUNT(*) FROM dioceses"),
             "bastina_nespojena": q("SELECT COUNT(*) FROM heritage_unmatched"),
         }
 
+        stats["zupe_po_izvoru_koordinata"] = {
+            (r["geocode_source"] or "?"): r["n"] for r in conn.execute(
+                "SELECT geocode_source, COUNT(*) n FROM parishes WHERE lat IS NOT NULL "
+                "GROUP BY geocode_source ORDER BY n DESC"
+            )
+        }
         stats["po_tipu"] = {
             r["kind"] or "?": r["n"] for r in conn.execute(
                 "SELECT kind, COUNT(*) n FROM churches GROUP BY kind ORDER BY n DESC"
@@ -95,13 +105,16 @@ def run() -> None:
     print(f"  … sa zaštitom (MinKulture)  {stats['crkve_sa_zastitom']:>7}  {pct(stats['crkve_sa_zastitom'], n)}")
     print(f"  … sa slikom (Commons)       {stats['crkve_sa_slikom']:>7}  {pct(stats['crkve_sa_slikom'], n)}")
     print(f"  … povezano sa župom         {stats['crkve_sa_zupom']:>7}  {pct(stats['crkve_sa_zupom'], n)}")
+    print(f"  … lokacija potvrđena (Places){stats['crkve_lokacija_potvrdjena']:>6}  {pct(stats['crkve_lokacija_potvrdjena'], n)}")
     print(f"  … od toga župnih crkava     {stats['zupne_crkve']:>7}")
     print("─" * 62)
     print(f"  Pravnih osoba (župe i sl.)  {stats['pravne_osobe_ukupno']:>7}")
     print(f"  … katoličkih župa           {stats['zupe_katolicke']:>7}")
     print(f"  … s koordinatama            {stats['zupe_s_koordinatama']:>7}  {pct(stats['zupe_s_koordinatama'], stats['pravne_osobe_ukupno'])}")
+    print(f"  … s telefonom / webom       {stats['zupe_s_telefonom']:>7} / {stats['zupe_s_webom']}")
     print(f"  Biskupija i zajednica       {stats['biskupije_i_zajednice']:>7}")
     print(f"  Baština bez para            {stats['bastina_nespojena']:>7}")
+    print(f"  Geo konflikata za pregled   {stats['geo_konflikti']:>7}")
     print("─" * 62)
     print("  Po tipu:", ", ".join(f"{k} {v}" for k, v in list(stats["po_tipu"].items())[:8]))
     print("═" * 62)

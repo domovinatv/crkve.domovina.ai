@@ -81,6 +81,11 @@ CREATE TABLE IF NOT EXISTS churches (
   email           TEXT,
   website         TEXT,
 
+  -- Nezavisna provjera lokacije (Google Places, scripts/13)
+  google_place_id TEXT,
+  geo_verified    INTEGER DEFAULT 0,  -- 1 = Places potvrdio lokaciju/match
+  geo_verify_m    REAL,               -- udaljenost OSM ↔ Places, u metrima
+
   -- Meta
   source          TEXT,      -- JSON array: ["osm","wikidata","kulturna-dobra"]
   notes           TEXT,
@@ -132,6 +137,9 @@ CREATE TABLE IF NOT EXISTS parishes (
   email           TEXT,
   website         TEXT,
 
+  google_place_id TEXT,
+  google_maps_uri TEXT,
+
   source          TEXT,
   notes           TEXT,
   created_at      TEXT DEFAULT CURRENT_TIMESTAMP,
@@ -167,6 +175,26 @@ CREATE TABLE IF NOT EXISTS heritage_unmatched (
   status        TEXT,
   period        TEXT,
   description   TEXT,
+  created_at    TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Neslaganja između naše lokacije i Google Placesa (scripts/13). Ovo je
+-- izlaz nezavisne provjere: ili je OSM točka kriva, ili je župa spojena na
+-- krivu crkvu, ili je Places vratio drugi objekt. Ne popravlja se automatski
+-- — izvozi se u CSV da se vidi i po potrebi razriješi ručno.
+CREATE TABLE IF NOT EXISTS geo_conflicts (
+  id            INTEGER PRIMARY KEY,
+  parish_id     INTEGER REFERENCES parishes(id) ON DELETE CASCADE,
+  church_id     INTEGER REFERENCES churches(id) ON DELETE CASCADE,
+  parish_name   TEXT,
+  church_name   TEXT,
+  place_name    TEXT,
+  place_address TEXT,
+  distance_m    REAL,
+  our_lat       REAL,
+  our_lng       REAL,
+  place_lat     REAL,
+  place_lng     REAL,
   created_at    TEXT DEFAULT CURRENT_TIMESTAMP
 );
 

@@ -39,7 +39,7 @@ SELECT c.id, c.slug, c.name, c.kind, c.religion, c.denomination, c.titular,
        c.parish_id, c.is_parish_church,
        c.osm_type, c.osm_id, c.wikidata_id, c.wikipedia_url, c.commons_image,
        c.heritage_id, c.heritage_status, c.year_built, c.architect, c.style,
-       c.phone, c.email, c.website, c.source,
+       c.phone, c.email, c.website, c.geo_verified, c.source,
        p.name AS parish_name, p.slug AS parish_slug, p.diocese AS diocese
 FROM churches c
 LEFT JOIN parishes p ON p.id = c.parish_id
@@ -51,7 +51,7 @@ PARISH_SQL = """
 SELECT id, slug, name, short_name, kind, religion, denomination, titular,
        oib, diocese, community, address, city, county, lat, lng,
        geocode_source, registry_no, registry_status, leader_title,
-       phone, email, website, source
+       phone, email, website, google_maps_uri, source
 FROM parishes
 WHERE lat IS NOT NULL AND lng IS NOT NULL
   AND (registry_status IS NULL OR registry_status LIKE 'AKTIV%')

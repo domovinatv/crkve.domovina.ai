@@ -9,12 +9,20 @@
   "crkve_sa_zupom": 2950,
   "zupne_crkve": 1151,
   "crkve_s_tlocrtom": 5256,
+  "crkve_lokacija_potvrdjena": 0,
+  "geo_konflikti": 0,
   "pravne_osobe_ukupno": 2979,
   "zupe_katolicke": 1563,
   "zupe_s_koordinatama": 2803,
   "zupe_s_oib": 1778,
+  "zupe_s_telefonom": 0,
+  "zupe_s_webom": 0,
   "biskupije_i_zajednice": 70,
   "bastina_nespojena": 923,
+  "zupe_po_izvoru_koordinata": {
+    "naselje-centroid": 1652,
+    "church": 1151
+  },
   "po_tipu": {
     "crkva": 3966,
     "kapela": 1434,
