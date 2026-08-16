@@ -72,9 +72,24 @@ crkve** (točno), a `12_geocode_parishes` tek ostatak gura na Nominatim (sporo,
 gumb „⛪ Crkve" u `src/components/ControlsPanel.tsx` + tipovi `CrkvaProperties`
 u `src/lib/types.ts`. Deploy: `cd ../karta-hrvatske/apps/karta-web && npm run deploy`.
 
+Drugi sloj, „🏛 Župe": `useZupeLayer.ts` + `showZupe` + tipovi `ZupaProperties`.
+Crta pravne osobe (ne građevine), a **crveni prsten je župa bez spojene župne
+crkve** — 489 od 1563. To je jedini prikaz te rupe u podacima: u sloju Crkve
+takva župa naprosto ne postoji. Prsten ide u dva sloja (bijela podloga pa
+crveni prsten) jer je ispod njega ispuna JLS-a proizvoljne boje — jednobojni
+prsten se u nekoj županiji/temi uvijek stopi s podlogom.
+
 **GeoJSON-i su gitignored u karta-web** — regeneriraju se, ne commitaju.
 
 ## Gotchas (naučeno na teži način)
+- **„Župa bez crkve" su DVIJE različite brojke**, i nijedna nije `1563 −
+  zupne_crkve`: 77 župnih crkava pripada pravnim osobama koje nisu `zupa`
+  (samostani, svetišta), pa ta razlika daje krivih 412. Točno je **489 župa
+  bez spojene župne crkve** i **422 bez ijedne spojene građevine**
+  (`zupe_bez_zupne_crkve`, `zupe_bez_ijedne_crkve` u `scripts/40`).
+- **`church_count` se u exportu ZADRŽAVA i kad je 0**, za razliku od zastavica
+  u `_DROP_IF_ZERO`: nula je nalaz („nema nijedne spojene građevine"), a ne
+  „nema podatka". Izostavljanjem bi rupa u podacima postala nevidljiva.
 - **723 katoličke pravne osobe nemaju OIB**, a naziv+mjesto nije jedinstven
   (dvije zagrebačke „ŽUPA SV. MARKA EVANĐELISTE"). Slug sufiks je OIB, a ako
   ga nema — `SBT_ID`. Bez toga se 6 zapisa tiho gubi.
@@ -155,14 +170,17 @@ u `src/lib/types.ts`. Deploy: `cd ../karta-hrvatske/apps/karta-web && npm run de
 ## Zašto je nešto tako — pozadina odluka
 Mjerenja koja su odredila pragove, alternative koje su probane pa odbačene
 (Nominatim, model s jednom tablicom, crkva kao sidro) i zamke koje su koštale
-vremena: **`docs/2026-08-15-izgradnja-kataloga.md`**. Ako mijenjaš matcher ili
-Places validaciju, pročitaj to prije nego "popraviš" nešto što je namjerno.
+vremena: **`docs/2026-08-15-izgradnja-kataloga.md`**. Sloj „🏛 Župe" i
+ispravak brojke „župa bez crkve": **`docs/2026-08-16-sloj-zupe.md`**. Ako
+mijenjaš matcher ili Places validaciju, pročitaj to prije nego "popraviš"
+nešto što je namjerno.
 
 ## Otvoreno / sljedeći koraci
 - **`heritage_unmatched`** — ostatak zaštićene baštine bez para (izvozi se u
   `data/exports/bastina-nespojeno.csv`). Dio su ruševine i objekti kojih u
   OSM-u nema; dio je posao za bolji matcher ili ručno mapiranje.
 - **Župe bez crkve** — evidencija ima župu, OSM nema odgovarajuću građevinu.
+  489 bez župne crkve, 422 bez ijedne; na karti su crveni prsten u sloju Župe.
 - **Kontakti župa** (telefon/email/web) — nisu u državnoj evidenciji; išlo bi
   Firecrawlom po uzoru na `../klubovi.domovina.ai/scripts/04_backfill.py`.
 - **Zaseban frontend crkve.domovina.ai** — po uzoru na

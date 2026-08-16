@@ -41,17 +41,26 @@ EXPORTS = {
         ORDER BY c.county, c.city, c.name
     """,
     "zupe.csv": """
-        SELECT id, slug, name AS naziv, short_name AS kratki_naziv, kind AS vrsta,
-               titular, oib, diocese AS biskupija, community AS zajednica,
-               religion AS religija, denomination AS konfesija,
-               address AS adresa, city AS mjesto, county AS zupanija, lat, lng,
-               geocode_source AS izvor_koordinata,
-               registry_no AS evidencijski_broj, registry_status AS status,
-               registered_at AS datum_upisa, leader_title AS sluzba,
-               phone AS telefon, email, website AS web,
-               google_maps_uri AS google_karta,
-               source AS izvori
-        FROM parishes ORDER BY diocese, name
+        SELECT p.id, p.slug, p.name AS naziv, p.short_name AS kratki_naziv,
+               p.kind AS vrsta, p.titular, p.oib, p.diocese AS biskupija,
+               p.community AS zajednica,
+               p.religion AS religija, p.denomination AS konfesija,
+               p.address AS adresa, p.city AS mjesto, p.county AS zupanija,
+               p.lat, p.lng, p.geocode_source AS izvor_koordinata,
+               p.registry_no AS evidencijski_broj, p.registry_status AS status,
+               p.registered_at AS datum_upisa, p.leader_title AS sluzba,
+               p.phone AS telefon, p.email, p.website AS web,
+               p.google_maps_uri AS google_karta,
+               (SELECT COUNT(*) FROM churches c WHERE c.parish_id = p.id)
+                   AS broj_gradjevina,
+               pc.name AS zupna_crkva, pc.slug AS zupna_crkva_slug,
+               p.source AS izvori
+        FROM parishes p
+        LEFT JOIN churches pc ON pc.id = (
+            SELECT c2.id FROM churches c2
+            WHERE c2.parish_id = p.id AND c2.is_parish_church = 1
+            ORDER BY c2.id LIMIT 1)
+        ORDER BY p.diocese, p.name
     """,
     "biskupije.csv": """
         SELECT id, slug, name AS naziv, kind AS vrsta, religion AS religija,

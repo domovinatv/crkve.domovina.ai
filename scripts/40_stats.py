@@ -47,6 +47,18 @@ def run() -> None:
             "zupe_s_oib": q("SELECT COUNT(*) FROM parishes WHERE oib IS NOT NULL"),
             "zupe_s_telefonom": q("SELECT COUNT(*) FROM parishes WHERE phone IS NOT NULL"),
             "zupe_s_webom": q("SELECT COUNT(*) FROM parishes WHERE website IS NOT NULL"),
+            # Dvije različite rupe, ne jedna: župa može imati spojene filijale
+            # a ne i vlastitu župnu crkvu. Brojka 1563 − zupne_crkve je kriva
+            # jer 77 župnih crkava pripada pravnim osobama koje nisu `zupa`
+            # (samostani, svetišta).
+            "zupe_bez_zupne_crkve": q(
+                "SELECT COUNT(*) FROM parishes p WHERE p.kind = 'zupa' AND NOT EXISTS("
+                " SELECT 1 FROM churches c WHERE c.parish_id = p.id AND c.is_parish_church = 1)"
+            ),
+            "zupe_bez_ijedne_crkve": q(
+                "SELECT COUNT(*) FROM parishes p WHERE p.kind = 'zupa' AND NOT EXISTS("
+                " SELECT 1 FROM churches c WHERE c.parish_id = p.id)"
+            ),
             "biskupije_i_zajednice": q("SELECT COUNT(*) FROM dioceses"),
             "bastina_nespojena": q("SELECT COUNT(*) FROM heritage_unmatched"),
         }
@@ -112,6 +124,8 @@ def run() -> None:
     print(f"  … katoličkih župa           {stats['zupe_katolicke']:>7}")
     print(f"  … s koordinatama            {stats['zupe_s_koordinatama']:>7}  {pct(stats['zupe_s_koordinatama'], stats['pravne_osobe_ukupno'])}")
     print(f"  … s telefonom / webom       {stats['zupe_s_telefonom']:>7} / {stats['zupe_s_webom']}")
+    print(f"  … župa bez župne crkve      {stats['zupe_bez_zupne_crkve']:>7}"
+          f"  (bez ijedne: {stats['zupe_bez_ijedne_crkve']})")
     print(f"  Biskupija i zajednica       {stats['biskupije_i_zajednice']:>7}")
     print(f"  Baština bez para            {stats['bastina_nespojena']:>7}")
     print(f"  Geo konflikata za pregled   {stats['geo_konflikti']:>7}")

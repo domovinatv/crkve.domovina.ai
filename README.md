@@ -1,6 +1,6 @@
 # DOMOVINA Crkve — katalog svih crkava u Hrvatskoj
 
-**Karta:** [gis.domovina.ai](https://gis.domovina.ai/) (sloj „⛪ Crkve")
+**Karta:** [gis.domovina.ai](https://gis.domovina.ai/) (slojevi „⛪ Crkve" i „🏛 Župe")
 &nbsp;·&nbsp; **Kod:** [MIT](LICENSE)
 &nbsp;·&nbsp; **Podaci:** [ODbL + CC-BY](LICENSE-DATA)
 &nbsp;·&nbsp; **Mreža:** dio [DOMOVINA](https://domovina.ai) ekosustava
@@ -303,7 +303,7 @@ pipeline radi, ali bez naselja matching osjetno padne.
 ```
 data/crkve.db                     SQLite katalog + FTS5
 data/exports/crkve.geojson        6 966 točaka (3,9 MB)
-data/exports/zupe.geojson         2 802 točke (1,8 MB)
+data/exports/zupe.geojson         2 928 točaka (2,5 MB)
 data/exports/crkve.csv            pun izvoz, UTF-8 s BOM (Excel-friendly)
 data/exports/zupe.csv
 data/exports/biskupije.csv
@@ -360,7 +360,8 @@ popravljen: [`docs/2026-08-15-izgradnja-kataloga.md`](docs/2026-08-15-izgradnja-
 
 - **923 zaštićena objekta** nemaju para u OSM-u — dio su ruševine, dio posao
   za bolji matcher.
-- **412 župa** nije spojeno sa svojom crkvom (od 1 563).
+- **489 župa** (od 1 563) nema spojenu župnu crkvu, a **422** nemaju spojenu
+  nijednu građevinu. Na karti su to župe s crvenim prstenom u sloju „🏛 Župe".
 - **Kontakti župa** (telefon, email, web) — nisu u državnoj evidenciji.
   Telefon i web dolaze uz `make places`; email bi išao Firecrawlom po uzoru na
   `../klubovi.domovina.ai/scripts/04_backfill.py`.
@@ -368,9 +369,6 @@ popravljen: [`docs/2026-08-15-izgradnja-kataloga.md`](docs/2026-08-15-izgradnja-
   višeznačna imena naselja (dvije Privlake, dvoje Selca) gdje sidro nije bilo
   određeno pa distance-filtar nije mogao raditi.
 - **40 geo konflikata** čeka ručni pregled (`data/exports/geo-konflikti.csv`).
-- **`zupe.geojson` se šalje na kartu, ali ga nijedan sloj još ne čita** —
-  stoji kao javni podatkovni endpoint. Sloj za župe (npr. one bez matchirane
-  crkve) bio bi sljedeći logičan korak.
 - **4 crkve dijele `wikidata_id` s vlastitim samostanskim kompleksom** — to je
   tako tagirano u OSM-u (crkva i samostan su dva objekta, jedan Wikidata
   entitet). Nije duplikat i ne smije se dedupati.

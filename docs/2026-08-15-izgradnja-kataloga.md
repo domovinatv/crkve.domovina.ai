@@ -196,12 +196,16 @@ samostan umjesto crkve. Zato `geo_conflicts` ništa ne mijenja automatski.
 - **Repo nema git remote** — sve je lokalno na `main`.
 - **923 zaštićena objekta** iz Registra kulturnih dobara bez para u OSM-u
   (`data/exports/bastina-nespojeno.csv`). Dio su ruševine kojih u OSM-u nema.
-- **412 župa** (od 1 563) nije spojeno sa svojom crkvom.
+- **489 župa** (od 1 563) nema spojenu župnu crkvu; **422** nemaju spojenu
+  nijednu građevinu. (Brojka 412 iz prve verzije ovog dokumenta bila je kriva —
+  računala je `1563 − zupne_crkve`, a 77 župnih crkava pripada pravnim osobama
+  koje nisu župe.)
 - **40 geo konflikata** čeka ručni pregled (`data/exports/geo-konflikti.csv`).
 - **121 župa** precizirana Placesom je >5 km od svog naselja — višeznačna imena
   naselja (dvije Privlake, dvoje Selca) gdje sidro nije određeno.
-- **`zupe.geojson` se deploya, ali ga nijedan sloj ne čita** — stoji kao javni
-  podatkovni endpoint. Sloj za župe bio bi sljedeći korak.
+- ~~**`zupe.geojson` se deploya, ali ga nijedan sloj ne čita**~~ — riješeno
+  2026-08-16, sloj „🏛 Župe" (`useZupeLayer.ts`). Vidi
+  [`2026-08-16-sloj-zupe.md`](2026-08-16-sloj-zupe.md).
 - **Email župa** — nije ni u evidenciji ni u Placesu; išao bi Firecrawlom po
   uzoru na `../klubovi.domovina.ai/scripts/04_backfill.py`.
 - **Zaseban frontend** `crkve.domovina.ai` (React PWA) — odgođen, nije odbačen.

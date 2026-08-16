@@ -47,22 +47,39 @@ WHERE c.lat IS NOT NULL AND c.lng IS NOT NULL
 ORDER BY c.id
 """
 
+# `church_count` i `church_*` su jedini način da se iz zupe.geojson vidi je li
+# župa uopće spojena sa svojom građevinom — bez toga sloj za župe ne može
+# prikazati rupu u podacima (489 župa nema spojenu župnu crkvu, 422 nema
+# nijednu). Podupit umjesto JOIN-a jer nad `is_parish_church` nema unique
+# indeksa: da se invarijanta „jedna župna crkva po župi" ikad prekrši, JOIN bi
+# tiho duplicirao župu u exportu.
 PARISH_SQL = """
-SELECT id, slug, name, short_name, kind, religion, denomination, titular,
-       oib, diocese, community, address, city, county, lat, lng,
-       geocode_source, registry_no, registry_status, leader_title,
-       phone, email, website, google_maps_uri, source
-FROM parishes
-WHERE lat IS NOT NULL AND lng IS NOT NULL
-  AND (registry_status IS NULL OR registry_status LIKE 'AKTIV%')
-ORDER BY id
+SELECT p.id, p.slug, p.name, p.short_name, p.kind, p.religion, p.denomination,
+       p.titular, p.oib, p.diocese, p.community, p.address, p.city, p.county,
+       p.lat, p.lng, p.geocode_source, p.registry_no, p.registry_status,
+       p.leader_title, p.phone, p.email, p.website, p.google_maps_uri, p.source,
+       (SELECT COUNT(*) FROM churches c WHERE c.parish_id = p.id) AS church_count,
+       pc.slug AS church_slug, pc.name AS church_name, pc.kind AS church_kind,
+       pc.geo_verified AS church_verified
+FROM parishes p
+LEFT JOIN churches pc ON pc.id = (
+    SELECT c2.id FROM churches c2
+    WHERE c2.parish_id = p.id AND c2.is_parish_church = 1
+    ORDER BY c2.id LIMIT 1)
+WHERE p.lat IS NOT NULL AND p.lng IS NOT NULL
+  AND (p.registry_status IS NULL OR p.registry_status LIKE 'AKTIV%')
+ORDER BY p.id
 """
 
 
 # Zastavice 0/1 kod kojih je 0 isto što i "nema": karta ih čita kao
 # `["==", ["get", …], 1]` odnosno JS falsy, pa se odsutne i nulte ponašaju
 # identično. Izbacivanje nula štedi ~250 KB (11 700 polja) na 4 MB datoteke.
-_DROP_IF_ZERO = {"is_parish_church", "geo_verified", "unesco"}
+# `church_count` namjerno NIJE ovdje iako je često 0: nula nije „nema podatka"
+# nego nalaz („ova župa nema nijednu spojenu građevinu"), a to je upravo ono
+# što sloj za župe prikazuje. Izostavljena bi se rupa u podacima pretvorila u
+# odsutno polje i postala nevidljiva potrošaču.
+_DROP_IF_ZERO = {"is_parish_church", "geo_verified", "unesco", "church_verified"}
 
 
 def _fc(rows) -> dict:
