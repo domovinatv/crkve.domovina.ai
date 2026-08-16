@@ -196,7 +196,10 @@ samostan umjesto crkve. Zato `geo_conflicts` ništa ne mijenja automatski.
 - ~~**Repo nema git remote**~~ — objavljen 2026-08-16 kao javan repo
   [`domovinatv/crkve.domovina.ai`](https://github.com/domovinatv/crkve.domovina.ai).
 - **923 zaštićena objekta** iz Registra kulturnih dobara bez para u OSM-u
-  (`data/exports/bastina-nespojeno.csv`). Dio su ruševine kojih u OSM-u nema.
+  (`data/exports/bastina-nespojeno.csv`). ~~Dio su ruševine kojih u OSM-u
+  nema.~~ Izmjereno 2026-08-17: **za 922 od 923 blok kandidata nije bio
+  prazan** — neuspjeh je odluka matchera, ne odsutnost podataka. Vidi
+  [`2026-08-17-bastina-nespojeno.md`](2026-08-17-bastina-nespojeno.md).
 - **489 župa** (od 1 563) nema spojenu župnu crkvu; **422** nemaju spojenu
   nijednu građevinu. (Brojka 412 iz prve verzije ovog dokumenta bila je kriva —
   računala je `1563 − zupne_crkve`, a 77 župnih crkava pripada pravnim osobama
@@ -215,6 +218,7 @@ samostan umjesto crkve. Zato `geo_conflicts` ništa ne mijenja automatski.
 
 - [`2026-08-16-sloj-zupe.md`](2026-08-16-sloj-zupe.md) — sloj župa; ispravak brojke „župa bez crkve" (412 → 489/422)
 - [`2026-08-16-biskupije.md`](2026-08-16-biskupije.md) — zašto su granice biskupija izračunate i kako su izmjerene
+- [`2026-08-17-bastina-nespojeno.md`](2026-08-17-bastina-nespojeno.md) — je li 923 nespojena zapisa rupa u OSM-u ili posao za matcher (mjereno)
 - [`README.md`](../README.md) — trenutno stanje, izvori, upute
 - [`CLAUDE.md`](../CLAUDE.md) — orijentacija za agente, sažete zamke
 - [`LICENSE-DATA`](../LICENSE-DATA) — zašto podaci nisu čisti CC-BY (ODbL od OSM-a)

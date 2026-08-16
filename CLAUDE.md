@@ -199,14 +199,19 @@ Mjerenja koja su odredila pragove, alternative koje su probane pa odbačene
 vremena: **`docs/2026-08-15-izgradnja-kataloga.md`**. Sloj „🏛 Župe" i
 ispravak brojke „župa bez crkve": **`docs/2026-08-16-sloj-zupe.md`**.
 Zašto su granice biskupija izračunate i kako su izmjerene:
-**`docs/2026-08-16-biskupije.md`**. Ako mijenjaš matcher, Places validaciju
+**`docs/2026-08-16-biskupije.md`**. Zašto 923 nespojena baštinska zapisa nisu
+rupa u OSM-u nego odluka matchera, i koju dijagnozu napraviti prije izmjene:
+**`docs/2026-08-17-bastina-nespojeno.md`**. Ako mijenjaš matcher, Places validaciju
 ili derivaciju granica, pročitaj to prije nego "popraviš" nešto što je
 namjerno.
 
 ## Otvoreno / sljedeći koraci
 - **`heritage_unmatched`** — ostatak zaštićene baštine bez para (izvozi se u
-  `data/exports/bastina-nespojeno.csv`). Dio su ruševine i objekti kojih u
-  OSM-u nema; dio je posao za bolji matcher ili ručno mapiranje.
+  `data/exports/bastina-nespojeno.csv`). Izmjereno: **za 922 od 923 blok
+  kandidata NIJE bio prazan** (821 ima građevina u vlastitom naselju, 101 u
+  općini, samo 1 nigdje), pa je „nema toga u OSM-u" pogrešno objašnjenje —
+  matcher je gledao pa odbio. Prije mijenjanja pragova napravi dijagnozu faze
+  u kojoj `best_match` odustaje: **`docs/2026-08-17-bastina-nespojeno.md`**.
 - **Župe bez crkve** — evidencija ima župu, OSM nema odgovarajuću građevinu.
   489 bez župne crkve, 422 bez ijedne; na karti su crveni prsten u sloju Župe.
 - **Kontakti župa** (telefon/email/web) — nisu u državnoj evidenciji; išlo bi
