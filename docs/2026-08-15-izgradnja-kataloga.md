@@ -213,6 +213,8 @@ samostan umjesto crkve. Zato `geo_conflicts` ništa ne mijenja automatski.
 
 ## Vezani dokumenti
 
+- [`2026-08-16-sloj-zupe.md`](2026-08-16-sloj-zupe.md) — sloj župa; ispravak brojke „župa bez crkve" (412 → 489/422)
+- [`2026-08-16-biskupije.md`](2026-08-16-biskupije.md) — zašto su granice biskupija izračunate i kako su izmjerene
 - [`README.md`](../README.md) — trenutno stanje, izvori, upute
 - [`CLAUDE.md`](../CLAUDE.md) — orijentacija za agente, sažete zamke
 - [`LICENSE-DATA`](../LICENSE-DATA) — zašto podaci nisu čisti CC-BY (ODbL od OSM-a)
