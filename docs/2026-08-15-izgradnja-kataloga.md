@@ -193,7 +193,8 @@ samostan umjesto crkve. Zato `geo_conflicts` ništa ne mijenja automatski.
 
 ## 7. Otvoreno
 
-- **Repo nema git remote** — sve je lokalno na `main`.
+- ~~**Repo nema git remote**~~ — objavljen 2026-08-16 kao javan repo
+  [`domovinatv/crkve.domovina.ai`](https://github.com/domovinatv/crkve.domovina.ai).
 - **923 zaštićena objekta** iz Registra kulturnih dobara bez para u OSM-u
   (`data/exports/bastina-nespojeno.csv`). Dio su ruševine kojih u OSM-u nema.
 - **489 župa** (od 1 563) nema spojenu župnu crkvu; **422** nemaju spojenu
