@@ -1,6 +1,6 @@
 # DOMOVINA Crkve — katalog svih crkava u Hrvatskoj
 
-**Karta:** [gis.domovina.ai](https://gis.domovina.ai/) (slojevi „⛪ Crkve" i „🏛 Župe")
+**Karta:** [gis.domovina.ai](https://gis.domovina.ai/) (slojevi „⛪ Crkve", „🏛 Župe" i „✝️ Biskupije")
 &nbsp;·&nbsp; **Kod:** [MIT](LICENSE)
 &nbsp;·&nbsp; **Podaci:** [ODbL + CC-BY](LICENSE-DATA)
 &nbsp;·&nbsp; **Mreža:** dio [DOMOVINA](https://domovina.ai) ekosustava
@@ -191,6 +191,18 @@ općine i županije svakoj građevini — i za offline geokodiranje sjedišta ž
 preko težišta naselja. Isti sloj crta kartu na gis.domovina.ai, pa su granice
 u katalogu i na karti po definiciji iste.
 
+### Granice biskupija — izvor NE POSTOJI
+Provjereno uživo: OpenStreetMap ima **3 od 15** biskupija kao
+`boundary=religious_administration`, Wikidata **nijednu** (`P3896` prazan za
+svih 10 hrvatskih dijeceza koje ima). Teritoriji se zato **deriviraju**
+(`scripts/20`): naselje pripadne biskupiji župa koje u njemu sjede, ostala
+najbližoj župi, pa se naselja iste biskupije spoje.
+
+Te 3 OSM granice nisu upotrijebljene kao izvor nego kao **mjera**: slaganje je
+96,6 % / 98,6 % / 97,9 % naselja (IoU 0,92–0,98), a zbroj svih 15 teritorija
+56 530 km² naspram 56 594 km² kopna RH. Brojka slaganja stoji uz svaki
+teritorij i piše u popupu na karti.
+
 ## Model podataka
 
 ```
@@ -246,8 +258,11 @@ make help        # popis koraka
 13_places_parishes        Google Places (OPCIONALNO, treba ključ):
                           preciziranje župa + nezavisna provjera matchera
         ▼
+20_derive_diocese_areas   teritoriji 15 biskupija iz sjedišta župa
+                          + mjeri se o 3 granice koje OSM ima (96,6–98,6 %)
+        ▼
 30_build_fts              FTS5, dijakritički neosjetljivo
-31_export_geojson         data/exports/{crkve,zupe}.geojson
+31_export_geojson         data/exports/{crkve,zupe,biskupije}.geojson
 32_export_csv             + biskupije.csv, bastina-nespojeno.csv
 33_sync_karta             →  ../karta-hrvatske/apps/karta-web/public/data/
 40_stats                  izvještaj + stats.json
@@ -304,6 +319,7 @@ pipeline radi, ali bez naselja matching osjetno padne.
 data/crkve.db                     SQLite katalog + FTS5
 data/exports/crkve.geojson        6 966 točaka (3,9 MB)
 data/exports/zupe.geojson         2 928 točaka (2,5 MB)
+data/exports/biskupije.geojson    15 teritorija, derivirano (0,7 MB)
 data/exports/crkve.csv            pun izvoz, UTF-8 s BOM (Excel-friendly)
 data/exports/zupe.csv
 data/exports/biskupije.csv
@@ -324,20 +340,31 @@ for r in connect().execute(
 
 ## Karta
 
-Sloj „⛪ Crkve" na [gis.domovina.ai](https://gis.domovina.ai/) — boja po tipu,
-župne crkve veće, katedrale/bazilike/svetišta vidljivi od zoom 7. Popup nosi
-titular, župu, biskupiju, zaštitu, godinu, sliku i linkove (web, Wikipedija,
-OSM).
+Tri sloja na [gis.domovina.ai](https://gis.domovina.ai/):
+
+**⛪ Crkve** — 6 966 građevina, boja po tipu, župne crkve veće,
+katedrale/bazilike/svetišta vidljivi od zoom 7. Popup nosi titular, župu,
+biskupiju, zaštitu, godinu, sliku i linkove (web, Wikipedija, OSM).
+
+**🏛 Župe** — 2 928 vjerskih pravnih osoba. **Crveni prsten je župa bez spojene
+župne crkve** (489 od 1 563) — te župe u sloju Crkve ne postoje jer za njih
+građevine u katalogu nema, pa je ovo jedini prikaz te rupe na karti.
+
+**✝️ Biskupije** — teritoriji 15 latinskih (nad)biskupija, derivirani (vidi
+gore). Popup nosi površinu, stanovništvo, broj naselja, župa i crkava, i
+**izmjereno slaganje s OSM granicom**. Križevačke eparhije nema jer se
+preklapa sa svima.
 
 ```bash
 make sync-karta                                 # GeoJSON → karta-web/public/data
 cd ../karta-hrvatske/apps/karta-web && npm run deploy
 ```
 
-Implementacija u `karta-hrvatske`: `src/hooks/useCrkveLayer.ts`, toggle
-`showCrkve` u `src/lib/MapState.tsx`, gumb u `src/components/ControlsPanel.tsx`,
-tipovi `CrkvaProperties` u `src/lib/types.ts`. `sync-data.mjs` pokupi GeoJSON
-automatski iz ovog repoa (`SIBLING_LAYERS`).
+Implementacija u `karta-hrvatske`: `useCrkveLayer.ts` / `useZupeLayer.ts` /
+`useBiskupijeLayer.ts` u `src/hooks/`, toggleovi `showCrkve` / `showZupe` /
+`showBiskupije` u `src/lib/MapState.tsx`, gumbi u
+`src/components/ControlsPanel.tsx`, tipovi u `src/lib/types.ts`.
+`sync-data.mjs` pokupi GeoJSON automatski iz ovog repoa (`SIBLING_LAYERS`).
 
 ## Licenca
 
@@ -355,6 +382,11 @@ zapis → otvorite issue.
 Mjerenja, odbačene alternative i zamke iz izgradnje — zašto matcher radi baš
 tako, zašto Nominatim nije upotrijebljen, kako je Places prvo štetio pa
 popravljen: [`docs/2026-08-15-izgradnja-kataloga.md`](docs/2026-08-15-izgradnja-kataloga.md).
+
+Sloj župa i ispravak brojke „župa bez crkve":
+[`docs/2026-08-16-sloj-zupe.md`](docs/2026-08-16-sloj-zupe.md).
+Zašto su granice biskupija izračunate i kako su izmjerene:
+[`docs/2026-08-16-biskupije.md`](docs/2026-08-16-biskupije.md).
 
 ## Što još fali
 

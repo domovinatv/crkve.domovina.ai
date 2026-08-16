@@ -63,10 +63,15 @@ EXPORTS = {
         ORDER BY p.diocese, p.name
     """,
     "biskupije.csv": """
-        SELECT id, slug, name AS naziv, kind AS vrsta, religion AS religija,
-               denomination AS konfesija, oib, seat AS sjediste,
-               parish_count AS broj_zupa, source AS izvori
-        FROM dioceses ORDER BY name
+        SELECT d.id, d.slug, d.name AS naziv, d.kind AS vrsta,
+               d.religion AS religija, d.denomination AS konfesija, d.oib,
+               d.seat AS sjediste, d.parish_count AS broj_zupa,
+               a.area_km2 AS povrsina_km2, a.population AS stanovnika_na_podrucju,
+               a.settlement_count AS broj_naselja, a.church_count AS broj_crkava,
+               a.osm_agreement AS slaganje_s_osm_posto,
+               d.source AS izvori
+        FROM dioceses d LEFT JOIN diocese_areas a ON a.diocese_id = d.id
+        ORDER BY d.name
     """,
     "geo-konflikti.csv": """
         SELECT parish_name AS zupa, church_name AS spojena_crkva,

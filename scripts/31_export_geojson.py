@@ -82,6 +82,18 @@ ORDER BY p.id
 _DROP_IF_ZERO = {"is_parish_church", "geo_verified", "unesco", "church_verified"}
 
 
+# Teritoriji biskupija su jedini poligoni u exportu i jedini DERIVIRANI sloj —
+# `method` i `osm_agreement` putuju uz svaki feature da karta ne bi tvrdila
+# preciznost koju podatak nema. Vidi scripts/20 i src/dioceses.py.
+DIOCESE_SQL = """
+SELECT a.diocese_id AS id, d.slug, a.name, d.kind, d.seat, d.oib,
+       a.geometry, a.area_km2, a.population, a.settlement_count,
+       a.parish_count, a.church_count, a.method, a.osm_agreement
+FROM diocese_areas a JOIN dioceses d ON d.id = a.diocese_id
+ORDER BY a.name
+"""
+
+
 def _fc(rows) -> dict:
     feats = []
     for r in rows:
@@ -112,14 +124,38 @@ def _fc(rows) -> dict:
     return {"type": "FeatureCollection", "features": feats}
 
 
+def _diocese_fc(rows) -> dict:
+    """Poligoni — geometrija je već GeoJSON string iz `diocese_areas`."""
+    feats = []
+    for r in rows:
+        props = {k: r[k] for k in r.keys()
+                 if k != "geometry" and r[k] is not None and r[k] != ""}
+        feats.append({
+            "type": "Feature",
+            "id": r["id"],
+            "geometry": json.loads(r["geometry"]),
+            "properties": props,
+        })
+    return {"type": "FeatureCollection", "features": feats}
+
+
 def run() -> None:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     with connect() as conn:
         churches = conn.execute(CHURCH_SQL).fetchall()
         parishes = conn.execute(PARISH_SQL).fetchall()
+        areas = conn.execute(DIOCESE_SQL).fetchall()
 
-    for fname, rows in [("crkve.geojson", churches), ("zupe.geojson", parishes)]:
-        fc = _fc(rows)
+    collections = [
+        ("crkve.geojson", _fc(churches)),
+        ("zupe.geojson", _fc(parishes)),
+    ]
+    if areas:
+        collections.append(("biskupije.geojson", _diocese_fc(areas)))
+    else:
+        log.warning("biskupije.geojson preskočen — pokreni scripts/20 (make derive)")
+
+    for fname, fc in collections:
         path = OUT_DIR / fname
         path.write_text(json.dumps(fc, ensure_ascii=False, separators=(",", ":")))
         log.info("%s: %d feature-a (%.1f MB)",

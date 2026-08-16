@@ -47,6 +47,9 @@ poklonac) nema župu. `dioceses` drži (nad)biskupije i nekatoličke zajednice.
 - **data.gov.hr / Ministarstvo kulture i medija** — Registar kulturnih dobara,
   2038 sakralnih zapisa. **Nema koordinate** → spaja se heuristikom (scripts/10).
 - **Wikidata SPARQL** (CC0) — slike s Commonsa, Wikipedija, arhitekt, godina.
+- **Granice biskupija NE POSTOJE kao javan podatak** — OSM ih ima 3 od 15,
+  Wikidata nijednu. Zato ih `scripts/20` derivira iz sjedišta župa preko
+  granica naselja, a te 3 OSM relacije služe kao mjera (96,6–98,6 %).
 - **Nominatim** — samo sjedišta župa koje nisu naslijedile koordinate crkve.
 - **Google Places (New)** — JEDINI izvor s ključem, i **nije** u `make all`
   nego u `make places` (scripts/13). Nije geocoder za crkve (OSM je bolji,
@@ -56,32 +59,55 @@ poklonac) nema župu. `dioceses` drži (nad)biskupije i nekatoličke zajednice.
   istog poziva; 2359 poziva ukupno, keširano.
 
 ## Pipeline
-`make all` = `init → ingest (01–05) → match (10–12) → export (30–32) →
-sync-karta (33) → stats (40)`. Sve je idempotentno; sirovi odgovori se kešraju
-u `data/raw/<izvor>/<sha>.json` pa drugi run ne dira mrežu (`make clean-cache`
-za prisilni refresh).
+`make all` = `init → ingest (01–05) → match (10–12) → derive (20) →
+export (30–32) → sync-karta (33) → stats (40)`. Sve je idempotentno; sirovi
+odgovori se kešraju u `data/raw/<izvor>/<sha>.json` pa drugi run ne dira
+mrežu (`make clean-cache`
+za prisilni refresh). Korak 20 mora doći poslije 12 (bez koordinata župa nema
+se od čega derivirati) i prije 31.
 
 Redoslijed 11 → 12 je bitan: `11_match_parishes` daje župi koordinate **njezine
 crkve** (točno), a `12_geocode_parishes` tek ostatak gura na Nominatim (sporo,
 1 req/s; ~30 min za ~1800 župa).
 
 ## Karta (gis.domovina.ai)
-`scripts/33_sync_karta.py` prepiše `crkve.geojson`/`zupe.geojson` u
-`../karta-hrvatske/apps/karta-web/public/data/`. Tamo je sloj:
-`src/hooks/useCrkveLayer.ts` + toggle `showCrkve` u `src/lib/MapState.tsx` +
-gumb „⛪ Crkve" u `src/components/ControlsPanel.tsx` + tipovi `CrkvaProperties`
-u `src/lib/types.ts`. Deploy: `cd ../karta-hrvatske/apps/karta-web && npm run deploy`.
+`scripts/33_sync_karta.py` prepiše `crkve.geojson`, `zupe.geojson` i
+`biskupije.geojson` u `../karta-hrvatske/apps/karta-web/public/data/`. Svaki
+sloj ondje ima hook + toggle u `src/lib/MapState.tsx` + gumb u
+`src/components/ControlsPanel.tsx` + tipove u `src/lib/types.ts`:
 
-Drugi sloj, „🏛 Župe": `useZupeLayer.ts` + `showZupe` + tipovi `ZupaProperties`.
-Crta pravne osobe (ne građevine), a **crveni prsten je župa bez spojene župne
-crkve** — 489 od 1563. To je jedini prikaz te rupe u podacima: u sloju Crkve
-takva župa naprosto ne postoji. Prsten ide u dva sloja (bijela podloga pa
-crveni prsten) jer je ispod njega ispuna JLS-a proizvoljne boje — jednobojni
-prsten se u nekoj županiji/temi uvijek stopi s podlogom.
+| Gumb | Hook | Toggle | Tip |
+|---|---|---|---|
+| ⛪ Crkve | `useCrkveLayer.ts` | `showCrkve` | `CrkvaProperties` |
+| 🏛 Župe | `useZupeLayer.ts` | `showZupe` | `ZupaProperties` |
+| ✝️ Biskupije | `useBiskupijeLayer.ts` | `showBiskupije` | `BiskupijaProperties` |
+
+Deploy: `cd ../karta-hrvatske/apps/karta-web && npm run deploy`.
+
+**Župe:** crta pravne osobe (ne građevine), a **crveni prsten je župa bez
+spojene župne crkve** — 489 od 1563. To je jedini prikaz te rupe u podacima: u
+sloju Crkve takva župa naprosto ne postoji. Prsten ide u dva sloja (bijela
+podloga pa crveni prsten) jer je ispod njega ispuna JLS-a proizvoljne boje —
+jednobojni prsten se u nekoj županiji/temi uvijek stopi s podlogom.
+
+**Biskupije:** jedini poligoni i jedini DERIVIRANI sloj, pa popup piše kako je
+granica nastala i koliko se slaže s OSM-om. Dok je uključen, JLS ispuna pada
+na prigušeni preset (mutacija živi u `useJlsLayer`, sloju koji tu ispunu
+posjeduje) — dvije teritorijalne podjele s punom ispunom daju mulj.
 
 **GeoJSON-i su gitignored u karta-web** — regeneriraju se, ne commitaju.
 
 ## Gotchas (naučeno na teži način)
+- **Križevačka eparhija ne smije u particiju biskupija** — grkokatolička je,
+  teritorij joj se preklapa sa svim latinskima, a 35 župa joj je razasuto po
+  zemlji. `dioceses.OVERLAPPING_SLUGS` je izuzima; bez toga oko svake svoje
+  župe otme komad susjedne biskupije.
+- **`queryRenderedFeatures` vraća 0 za symbol slojeve i za krugove prozirne
+  ispune** koji se uredno crtaju. Dvaput izgubljeno vrijeme na lažni negativ —
+  rendering se provjerava okom (screenshot), ne tim pozivom.
+- **`make all` nakon `make places` briše Places rezultate** — `all` ne
+  uključuje korak 13, pa `geo_verified` i `geo_conflicts` ostanu prazni.
+  Za ponovni export poslije Placesa: `make derive export sync-karta stats`.
 - **„Župa bez crkve" su DVIJE različite brojke**, i nijedna nije `1563 −
   zupne_crkve`: 77 župnih crkava pripada pravnim osobama koje nisu `zupa`
   (samostani, svetišta), pa ta razlika daje krivih 412. Točno je **489 župa
@@ -171,9 +197,11 @@ prsten se u nekoj županiji/temi uvijek stopi s podlogom.
 Mjerenja koja su odredila pragove, alternative koje su probane pa odbačene
 (Nominatim, model s jednom tablicom, crkva kao sidro) i zamke koje su koštale
 vremena: **`docs/2026-08-15-izgradnja-kataloga.md`**. Sloj „🏛 Župe" i
-ispravak brojke „župa bez crkve": **`docs/2026-08-16-sloj-zupe.md`**. Ako
-mijenjaš matcher ili Places validaciju, pročitaj to prije nego "popraviš"
-nešto što je namjerno.
+ispravak brojke „župa bez crkve": **`docs/2026-08-16-sloj-zupe.md`**.
+Zašto su granice biskupija izračunate i kako su izmjerene:
+**`docs/2026-08-16-biskupije.md`**. Ako mijenjaš matcher, Places validaciju
+ili derivaciju granica, pročitaj to prije nego "popraviš" nešto što je
+namjerno.
 
 ## Otvoreno / sljedeći koraci
 - **`heritage_unmatched`** — ostatak zaštićene baštine bez para (izvozi se u

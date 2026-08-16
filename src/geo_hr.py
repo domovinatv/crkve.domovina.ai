@@ -102,6 +102,16 @@ def _jls():
     return _load("jls.geojson")
 
 
+def naselja_features() -> list:
+    """Sirovi `(bbox, polygons, props)` za svih 6759 naselja.
+
+    Za derivacije koje trebaju cijeli sloj, a ne pojedinu točku (scripts/20).
+    Dijeli `lru_cache` s `locate()`, pa se 21 MB parsira jednom po procesu.
+    """
+    feats, _ = _naselja()
+    return feats
+
+
 def _point_in_ring(lng: float, lat: float, ring: list) -> bool:
     """Ray casting. Ring je [[lng, lat], …]."""
     inside = False

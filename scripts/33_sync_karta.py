@@ -26,7 +26,7 @@ log = logging.getLogger("sync-karta")
 
 SRC = ROOT / "data" / "exports"
 DEFAULT_DST = ROOT.parent / "karta-hrvatske" / "apps" / "karta-web" / "public" / "data"
-FILES = ["crkve.geojson", "zupe.geojson"]
+FILES = ["crkve.geojson", "zupe.geojson", "biskupije.geojson"]
 
 
 def run() -> int:

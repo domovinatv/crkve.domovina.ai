@@ -198,6 +198,24 @@ CREATE TABLE IF NOT EXISTS geo_conflicts (
   created_at    TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Teritorij biskupije, DERIVIRAN iz sjedišta župa (scripts/20). Granice
+-- hrvatskih biskupija ne postoje kao javna geometrija: OSM ima 3 od 15,
+-- Wikidata nijednu. Zato je ovo izračun, a ne izvor — `osm_agreement` nosi
+-- izmjereno slaganje s onime što u OSM-u postoji. Vidi src/dioceses.py.
+CREATE TABLE IF NOT EXISTS diocese_areas (
+  diocese_id       INTEGER PRIMARY KEY REFERENCES dioceses(id) ON DELETE CASCADE,
+  name             TEXT NOT NULL,
+  geometry         TEXT NOT NULL,   -- GeoJSON geometrija (MultiPolygon)
+  area_km2         REAL,
+  population       INTEGER,         -- stanovnika na području (DZS/DGU), NE vjernika
+  settlement_count INTEGER,
+  parish_count     INTEGER,
+  church_count     INTEGER,
+  method           TEXT,            -- kako je derivirano
+  osm_agreement    REAL,            -- % naselja koja se slažu s OSM granicom (NULL ako je nema)
+  created_at       TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE INDEX IF NOT EXISTS idx_ch_name    ON churches(name);
 CREATE INDEX IF NOT EXISTS idx_ch_city    ON churches(city);
 CREATE INDEX IF NOT EXISTS idx_ch_county  ON churches(county);
