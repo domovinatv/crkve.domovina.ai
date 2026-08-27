@@ -59,8 +59,8 @@ poklonac) nema župu. `dioceses` drži (nad)biskupije i nekatoličke zajednice.
   istog poziva; 2359 poziva ukupno, keširano.
 
 ## Pipeline
-`make all` = `init → ingest (01–05) → match (10–12) → derive (20) →
-export (30–32) → sync-karta (33) → stats (40)`. Sve je idempotentno; sirovi
+`make all` = `init → ingest (01–05) → match (10–12 + fix-locations) →
+derive (20) → export (30–32) → sync-karta (33) → stats (40)`. Sve je idempotentno; sirovi
 odgovori se kešraju u `data/raw/<izvor>/<sha>.json` pa drugi run ne dira
 mrežu (`make clean-cache`
 za prisilni refresh). Korak 20 mora doći poslije 12 (bez koordinata župa nema
@@ -69,6 +69,12 @@ se od čega derivirati) i prije 31.
 Redoslijed 11 → 12 je bitan: `11_match_parishes` daje župi koordinate **njezine
 crkve** (točno), a `12_geocode_parishes` tek ostatak gura na Nominatim (sporo,
 1 req/s; ~30 min za ~1800 župa).
+
+`make fix-locations` (= `14_fix_parish_locations` pa **ponovo** 11) ide na
+kraj, poslije Placesa: 13 je zadnji korak koji dira koordinate župa, pa bi
+ranija korekcija bila pregažena. 11 se ponavlja jer premještena župa mijenja
+skup svojih crkava; smije se ponavljati jer resetira `parish_id` na početku i
+piše koordinate kroz `COALESCE` (ne gazi ono što je 14 upisao).
 
 ## Karta (gis.domovina.ai)
 `scripts/33_sync_karta.py` prepiše `crkve.geojson`, `zupe.geojson` i
@@ -111,7 +117,7 @@ posjeduje) — dvije teritorijalne podjele s punom ispunom daju mulj.
 - **„Župa bez crkve" su DVIJE različite brojke**, i nijedna nije `1563 −
   zupne_crkve`: 77 župnih crkava pripada pravnim osobama koje nisu `zupa`
   (samostani, svetišta), pa ta razlika daje krivih 412. Točno je **489 župa
-  bez spojene župne crkve** i **422 bez ijedne spojene građevine**
+  bez spojene župne crkve** i **424 bez ijedne spojene građevine**
   (`zupe_bez_zupne_crkve`, `zupe_bez_ijedne_crkve` u `scripts/40`).
 - **`church_count` se u exportu ZADRŽAVA i kad je 0**, za razliku od zastavica
   u `_DROP_IF_ZERO`: nula je nalaz („nema nijedne spojene građevine"), a ne
@@ -182,6 +188,24 @@ posjeduje) — dvije teritorijalne podjele s punom ispunom daju mulj.
   po upitu × do 5 kandidata po župi = 10+ sati). Zamijenjen težištem naselja
   iz DGU granica: 1,5 s za sve, točnost razine mjesta. Nominatim ostaje iza
   `--nominatim` flaga.
+- **Ime mjesta nije identitet mjesta.** Dva Kostanjevca, tri Zagorja, dvije
+  Vrane, dva Sveta Vida. `12`/`13` su župe znale spustiti na krivi homonim
+  (Barbat s Paga sjeo na Rab i obojao pola otoka zadarskim), a `11` je crkve
+  vezao na župu 180 km daleko. Otud `src/parish_geo.py` + `scripts/14` i prag
+  `MAX_FILIJALA_KM = 25`.
+- **Prag „koliko župa otvara županiju biskupiji" je 1, ne 2** — i to je
+  izmjereno, ne lijenost. S 2 je Riječka nadbiskupija gubila Istarsku (ondje
+  ima točno jednu župu, Vodice/Lanišće) pa ju je korekcija htjela odseliti
+  58 km. S 1 se usamljena kriva župa može sama zaštititi — te idu u
+  `parish_geo.OVERRIDES`, svaka s izvorom.
+- **Izvod županija računa se nad ISPRAVLJENIM odredištima** (`_override_county`).
+  Inače prvi run broji bujsku Krasicu u Istarsku, drugi ne — pa se dozvoljene
+  županije mijenjaju između runova i korekcija kaskadno mijenja odluke.
+- **Točka naselja mora biti provjereno UNUTAR naselja.** Težište razvedenog
+  („U") naselja pada van, a fallback na prvi vrh poligona leži NA granici gdje
+  point-in-polygon vraća False: 84 od 6759 naselja tvrdilo je da ne sadrži
+  samo sebe. Zbog toga je override za Sveti Vid-Miholjice na svakom runu
+  iznova gazio koordinatu razine zgrade. `parish_geo.representative_point()`.
 - **Blokiranje po mjestu ide u dvije razine** (naselje, pa općina) i **ne
   miješa se**: općina Vrgorac ima 25 crkava u dvadesetak sela i nikad ne dade
   jasnog pobjednika, dok naselje Dragljane ima jednu.
@@ -201,7 +225,9 @@ ispravak brojke „župa bez crkve": **`docs/2026-08-16-sloj-zupe.md`**.
 Zašto su granice biskupija izračunate i kako su izmjerene:
 **`docs/2026-08-16-biskupije.md`**. Zašto 923 nespojena baštinska zapisa nisu
 rupa u OSM-u nego odluka matchera, i koju dijagnozu napraviti prije izmjene:
-**`docs/2026-08-17-bastina-nespojeno.md`**. Ako mijenjaš matcher, Places validaciju
+**`docs/2026-08-17-bastina-nespojeno.md`**. Kako je homonim naselja obojao Rab
+u zadarsko i zašto je korekcija dvaput bila neidempotentna:
+**`docs/2026-08-17-revizija-lokacija-zupa.md`**. Ako mijenjaš matcher, Places validaciju
 ili derivaciju granica, pročitaj to prije nego "popraviš" nešto što je
 namjerno.
 
@@ -213,7 +239,10 @@ namjerno.
   matcher je gledao pa odbio. Prije mijenjanja pragova napravi dijagnozu faze
   u kojoj `best_match` odustaje: **`docs/2026-08-17-bastina-nespojeno.md`**.
 - **Župe bez crkve** — evidencija ima župu, OSM nema odgovarajuću građevinu.
-  489 bez župne crkve, 422 bez ijedne; na karti su crveni prsten u sloju Župe.
+  489 bez župne crkve, 424 bez ijedne; na karti su crveni prsten u sloju Župe.
+- **Revizija lokacija župa nije dovršena** — detektor C još prijavljuje
+  Slivno, Dobranje, Soline; u evidenciji su i dvostruki upisi (sv. Ivana
+  Krstitelja Prizna, sv. Stjepana Prgomet) koji napuhuju `parish_count`.
 - **Kontakti župa** (telefon/email/web) — nisu u državnoj evidenciji; išlo bi
   Firecrawlom po uzoru na `../klubovi.domovina.ai/scripts/04_backfill.py`.
 - **Zaseban frontend crkve.domovina.ai** — po uzoru na

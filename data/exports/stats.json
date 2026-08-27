@@ -6,7 +6,7 @@
   "crkve_sa_zastitom": 1115,
   "crkve_sa_slikom": 712,
   "crkve_s_wikipedijom": 699,
-  "crkve_sa_zupom": 2950,
+  "crkve_sa_zupom": 2922,
   "zupne_crkve": 1151,
   "crkve_s_tlocrtom": 5256,
   "crkve_lokacija_potvrdjena": 1083,
@@ -18,13 +18,13 @@
   "zupe_s_telefonom": 1064,
   "zupe_s_webom": 875,
   "zupe_bez_zupne_crkve": 489,
-  "zupe_bez_ijedne_crkve": 422,
+  "zupe_bez_ijedne_crkve": 424,
   "biskupije_i_zajednice": 70,
   "bastina_nespojena": 923,
   "zupe_po_izvoru_koordinata": {
-    "church": 1151,
-    "places": 1005,
-    "naselje-centroid": 772
+    "church": 1153,
+    "places": 996,
+    "naselje-centroid": 779
   },
   "po_tipu": {
     "crkva": 3966,

@@ -69,6 +69,8 @@ class Settlement(NamedTuple):
     population: int
     area_km2: float
     polygons: list
+    jls: str = ""
+    county: str = ""
 
 
 # ── geometrija bez shapelyja (dodjela) ────────────────────────────────────────
@@ -146,6 +148,8 @@ def settlements(feats: Iterable) -> list[Settlement]:
             population=int(props.get("stanovnistvo") or 0),
             area_km2=float(props.get("area_km2") or 0.0),
             polygons=polys,
+            jls=props.get("jls_name") or "",
+            county=props.get("zupanija") or "",
         ))
     return out
 
@@ -175,15 +179,24 @@ def assign(sett: list[Settlement], parishes: list[Parish]) -> Assignment:
     a najbliža župa je tek procjena. Naselje u kojem sjede župe dviju
     biskupija dobiva onu s više župa (izmjereno: takvih je šačica, sve su
     velika naselja na granici).
+
+    „Najbliža" se pritom traži u koncentričnim krugovima — prvo unutar iste
+    općine/grada, pa iste županije, pa tek onda bilo gdje. Zračna udaljenost
+    ne zna za more: Metajna na Pagu nema župu, a najbliža joj je preko
+    Velebitskog kanala u Gospićko-senjskoj, iako je cijeli otok podijeljen
+    između Krčke i Zadarske. Upravna granica je jeftin, ali dobar surogat za
+    „ista strana vode".
     """
     grid = _grid(sett)
     counts: dict[int, dict[str, int]] = {}
+    seat_of: dict[int, int] = {}          # indeks župe → indeks naselja u kojem sjedi
 
-    for p in parishes:
+    for pi, p in enumerate(parishes):
         for i in grid.get((int(p.lng / _CELL), int(p.lat / _CELL)), []):
             if any(_point_in_polygon(p.lng, p.lat, poly) for poly in sett[i].polygons):
                 counts.setdefault(i, {})
                 counts[i][p.diocese] = counts[i].get(p.diocese, 0) + 1
+                seat_of[pi] = i
                 break
 
     by: dict[int, str] = {}
@@ -194,11 +207,23 @@ def assign(sett: list[Settlement], parishes: list[Parish]) -> Assignment:
         by[i] = max(c.items(), key=lambda kv: (kv[1], kv[0]))[0]
 
     direct = len(by)
+    in_jls: dict[str, list[int]] = {}
+    in_county: dict[str, list[int]] = {}
+    for pi in range(len(parishes)):
+        si = seat_of.get(pi)
+        if si is None:
+            continue
+        in_jls.setdefault(sett[si].jls, []).append(pi)
+        in_county.setdefault(sett[si].county, []).append(pi)
+
+    everyone = list(range(len(parishes)))
     for i, s in enumerate(sett):
         if i in by:
             continue
-        best = min(parishes, key=lambda p: _dist2(s.lat, s.lng, p.lat, p.lng))
-        by[i] = best.diocese
+        pool = in_jls.get(s.jls) or in_county.get(s.county) or everyone
+        best = min(pool, key=lambda pi: _dist2(s.lat, s.lng,
+                                               parishes[pi].lat, parishes[pi].lng))
+        by[i] = parishes[best].diocese
 
     return Assignment(by, direct, len(by) - direct, mixed)
 

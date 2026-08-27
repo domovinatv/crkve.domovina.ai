@@ -251,15 +251,21 @@ make help        # popis koraka
         ▼
 10_match_heritage         baština → građevina        1 115 spojeno (55 %)
 11_match_parishes         župa → župna crkva         1 151 spojeno (74 % župa)
-                          + filijale u istom mjestu  1 800
+                          + filijale u istom mjestu  1 771
+                          (isto ime mjesta nije dovoljno: kandidat mora biti
+                           unutar 25 km od sjedišta — reže 28 filijala)
 12_geocode_parishes       težište naselja (offline)  1 652
                           `--nominatim` = fini prolaz (opcionalno, sporo)
         ▼
 13_places_parishes        Google Places (OPCIONALNO, treba ključ):
                           preciziranje župa + nezavisna provjera matchera
         ▼
+14_fix_parish_locations   župe sjele na krivi homonim naselja   11
+                          (biskupija reže kandidate; ostalo override)
+                          → pa 11_match_parishes ponovo
+        ▼
 20_derive_diocese_areas   teritoriji 15 biskupija iz sjedišta župa
-                          + mjeri se o 3 granice koje OSM ima (96,6–98,6 %)
+                          + mjeri se o 3 granice koje OSM ima (96,9–99,3 %)
         ▼
 30_build_fts              FTS5, dijakritički neosjetljivo
 31_export_geojson         data/exports/{crkve,zupe,biskupije}.geojson
@@ -387,12 +393,15 @@ Sloj župa i ispravak brojke „župa bez crkve":
 [`docs/2026-08-16-sloj-zupe.md`](docs/2026-08-16-sloj-zupe.md).
 Zašto su granice biskupija izračunate i kako su izmjerene:
 [`docs/2026-08-16-biskupije.md`](docs/2026-08-16-biskupije.md).
+Kako je homonim naselja obojao Rab u zadarsko i što je sve trebalo da se
+korekcija smije pustiti blizu podataka:
+[`docs/2026-08-17-revizija-lokacija-zupa.md`](docs/2026-08-17-revizija-lokacija-zupa.md).
 
 ## Što još fali
 
 - **923 zaštićena objekta** nemaju para u OSM-u — dio su ruševine, dio posao
   za bolji matcher.
-- **489 župa** (od 1 563) nema spojenu župnu crkvu, a **422** nemaju spojenu
+- **489 župa** (od 1 563) nema spojenu župnu crkvu, a **424** nemaju spojenu
   nijednu građevinu. Na karti su to župe s crvenim prstenom u sloju „🏛 Župe".
 - **Kontakti župa** (telefon, email, web) — nisu u državnoj evidenciji.
   Telefon i web dolaze uz `make places`; email bi išao Firecrawlom po uzoru na

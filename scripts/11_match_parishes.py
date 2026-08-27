@@ -15,6 +15,11 @@ Nakon spajanja župne crkve, ostale crkve u ISTOM mjestu bez vlastite župe
 dobivaju `parish_id` te župe (filijale/kapele), ali BEZ `is_parish_church`.
 To je namjerno slabija tvrdnja — mjesto s jednom župom nema drugu nadležnost.
 
+Ime mjesta pritom NIJE dovoljno: u Hrvatskoj postoje dva Lupoglava, tri
+Soline, dvije Sesvete. Bez provjere udaljenosti crkve istarskog Lupoglava
+završe na zagrebačkoj župi 180 km daleko. Zato: čim župa ima koordinate,
+kandidat mora biti unutar `parish_geo.MAX_FILIJALA_KM`.
+
   uv run python scripts/11_match_parishes.py [--dry-run]
 """
 from __future__ import annotations
@@ -30,6 +35,7 @@ sys.path.insert(0, str(ROOT))
 
 from src.db import connect  # noqa: E402
 from src.match import best_match, build_index, place_key  # noqa: E402
+from src.parish_geo import MAX_FILIJALA_KM, km  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("match-zupe")
@@ -38,13 +44,29 @@ log = logging.getLogger("match-zupe")
 PARISH_KINDS = ("zupa", "svetiste", "samostan", "parohija", "crkvena-opcina", "dzemat")
 
 
+def _too_far(seat: tuple | None, church: tuple | None) -> bool:
+    """Je li crkva izvan dosega te župe? Bez koordinata — nema tvrdnje."""
+    if not seat or not church or seat[0] is None or church[0] is None:
+        return False
+    return km(seat[0], seat[1], church[0], church[1]) > MAX_FILIJALA_KM
+
+
 def run(dry_run: bool = False) -> None:
     stats = Counter()
     with connect() as conn:
+        # Ponovni run mora krenuti od nule, inače stare (i krive) veze prežive
+        # jer se `parish_id` samo upisuje, nikad ne briše.
+        if not dry_run:
+            # `is_parish_church` se vraća na 0, a ne na NULL: shema ima
+            # DEFAULT 0, a CSV kolonu ispisuje doslovno — s NULL-om bi 5815
+            # građevina u exportu zamijenilo tvrdnju „nije župna" prazninom.
+            conn.execute("UPDATE churches SET parish_id = NULL, is_parish_church = 0")
+
         churches = conn.execute(
-            "SELECT id, name, kind, city, settlement, municipality FROM churches"
+            "SELECT id, name, kind, city, settlement, municipality, lat, lng FROM churches"
         ).fetchall()
         index = build_index(churches)
+        pos = {c["id"]: (c["lat"], c["lng"]) for c in churches}
 
         placeholders = ", ".join("?" * len(PARISH_KINDS))
         parishes = conn.execute(
@@ -57,6 +79,9 @@ def run(dry_run: bool = False) -> None:
 
         taken: set[int] = set()
         matched_parish_place: list[tuple[int, set[str]]] = []
+        # Sjedište župe se tijekom 1. prolaza može tek doznati (naslijedi ga od
+        # svoje crkve), pa se drži u dictu — 2. prolaz treba svježu vrijednost.
+        seat: dict[int, tuple] = {p["id"]: (p["lat"], p["lng"]) for p in parishes}
 
         for p in parishes:
             # Evidencija daje samo mjesto sjedišta — jedna razina. Naziv za
@@ -73,8 +98,13 @@ def run(dry_run: bool = False) -> None:
             if cand.id in taken:
                 stats["kandidat_vec_zauzet"] += 1
                 continue
+            if _too_far(seat.get(p["id"]), pos.get(cand.id)):
+                stats["zupna_crkva_predaleko"] += 1
+                continue
             taken.add(cand.id)
             stats["zupna_crkva_spojena"] += 1
+            if seat.get(p["id"], (None, None))[0] is None:
+                seat[p["id"]] = pos.get(cand.id, (None, None))
 
             if not dry_run:
                 conn.execute(
@@ -112,6 +142,9 @@ def run(dry_run: bool = False) -> None:
                 stats["filijala_dvosmislena" if cand_parishes else "filijala_bez_zupe"] += 1
                 continue
             pid = next(iter(cand_parishes))
+            if _too_far(seat.get(pid), (c["lat"], c["lng"])):
+                stats["filijala_predaleko"] += 1
+                continue
             stats["filijala_spojena"] += 1
             if not dry_run:
                 conn.execute(
