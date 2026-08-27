@@ -20,3 +20,15 @@ data/raw/
 !.claude/commands/
 .claude/commands/*
 !.claude/commands/*.md
+
+# Statički podaci frontenda — 9400 datoteka koje piše scripts/34_export_static.py
+# iz baze. Isti razlog kao GeoJSON-i u karta-web: regeneriraju se pred svaki
+# deploy (`make export-web`), pa bi u gitu bili samo šum u svakom commitu.
+frontend/public/data/
+
+# Frontend build i alati
+frontend/node_modules/
+frontend/.output/
+frontend/.tanstack/
+frontend/.wrangler/
+frontend/dist/

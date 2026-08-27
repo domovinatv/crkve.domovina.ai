@@ -1,7 +1,7 @@
 # crkve.domovina.ai — orkestracija pipelinea. `make help` za popis.
 # `make all` radi bez ijednog API ključa; ključ treba samo `make places`.
 
-.PHONY: help init ingest match fix-locations derive export stats all sync-karta places test clean-cache
+.PHONY: help init ingest match fix-locations derive export export-web stats all sync-karta places test clean-cache
 
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
@@ -40,12 +40,18 @@ export: ## FTS + GeoJSON + CSV
 sync-karta: ## preslikaj GeoJSON u ../karta-hrvatske (gis.domovina.ai)
 	uv run python scripts/33_sync_karta.py
 
+# Ide POSLIJE `stats`: 34 ne računa brojke sam nego preuzima data/exports/stats.json
+# (jedino mjesto gdje se npr. "487 župa bez župne crkve" računa) i odbija raditi
+# ako je zastario. Dvije brojke koje se same računaju razišle bi se.
+export-web: ## statički JSON za frontend/ (traži prethodni `make stats`)
+	uv run python scripts/34_export_static.py
+
 stats: ## izvještaj o pokrivenosti (+ data/exports/stats.json)
 	uv run python scripts/40_stats.py
 
-all: init ingest match derive export sync-karta stats ## cijeli pipeline od nule (bez ključeva)
+all: init ingest match derive export sync-karta stats export-web ## cijeli pipeline od nule (bez ključeva)
 
-all-places: init ingest match places fix-locations derive export sync-karta stats ## kao `all` + Places korak
+all-places: init ingest match places fix-locations derive export sync-karta stats export-web ## kao `all` + Places korak
 
 test: ## pytest
 	uv run pytest -q
