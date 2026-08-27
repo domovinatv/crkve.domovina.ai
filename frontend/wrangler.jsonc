@@ -1,0 +1,24 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+
+  // Preimenuj u naziv projekta PRIJE prvog deploya —
+  // ovo postaje <name>.<tvoja-subdomena>.workers.dev
+  "name": "hr-site-starter",
+
+  "compatibility_date": "2026-08-01",
+  "compatibility_flags": ["nodejs_compat"],
+
+  "observability": { "enabled": true },
+
+  // NAMJERNO nema "main" ni "assets": Nitro ih generira sam u
+  // .output/server/wrangler.json i tamošnje vrijednosti pobjeđuju.
+  // Sve ostalo odavde (name, compat, flags, vars, bindings) se preuzima.
+  //
+  // `wrangler deploy` iz roota radi jer build zapiše .wrangler/deploy/config.json
+  // koji preusmjerava wrangler na generirani config.
+  //
+  // Secrets NIKAD ovdje — postavi ih s:
+  //   wrangler secret put RESEND_API_KEY
+  //   wrangler secret put RESEND_FROM       (npr. "Naziv <upiti@domena.hr>")
+  //   wrangler secret put LEAD_RECIPIENT    (opcionalno; default je site.email)
+}

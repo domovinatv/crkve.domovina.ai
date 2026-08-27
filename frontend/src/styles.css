@@ -1,0 +1,192 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * DESIGN SYSTEM
+ *
+ * Popunjava /intake iz sekcije "Vizualni identitet" u BRIEF.md.
+ * Zadano: topla neutralna baza (off-white/cream), prigušen primary, near-black tekst.
+ *
+ * PRAVILA — vrijede bez iznimke:
+ *   1. Nikad ne hardkodiraj boju u komponenti. Ni hex, ni rgb, ni Tailwind
+ *      paletu (bg-blue-500). Samo tokeni definirani ovdje.
+ *   2. Sve boje u oklch. Miješanje formata razbija konzistentnost svjetline.
+ *   3. Nova boja = novi token ovdje, pa tek onda upotreba.
+ *   4. Akcenti su MALI highlighti (badge, točka, ikona), nikad velike plohe.
+ */
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 6px);
+  --radius-2xl: calc(var(--radius) + 12px);
+  --radius-3xl: calc(var(--radius) + 20px);
+  --radius-4xl: calc(var(--radius) + 28px);
+
+  --font-sans: "Nunito Sans", ui-sans-serif, system-ui, sans-serif;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ring-offset-background: var(--background);
+
+  --color-cream: var(--cream);
+  --color-sage: var(--sage);
+  --color-sage-soft: var(--sage-soft);
+  --color-sand: var(--sand);
+
+  /* brand accents — preimenuj u nešto smisleno za klijenta */
+  --color-accent-1: var(--accent-1);
+  --color-accent-2: var(--accent-2);
+  --color-accent-3: var(--accent-3);
+
+  --color-sidebar: var(--card);
+  --color-sidebar-foreground: var(--foreground);
+  --color-sidebar-primary: var(--primary);
+  --color-sidebar-primary-foreground: var(--primary-foreground);
+  --color-sidebar-accent: var(--accent);
+  --color-sidebar-accent-foreground: var(--accent-foreground);
+  --color-sidebar-border: var(--border);
+  --color-sidebar-ring: var(--ring);
+
+  --shadow-soft: 0 1px 2px oklch(0.3 0.02 120 / 4%), 0 12px 32px -18px oklch(0.35 0.03 140 / 22%);
+  --shadow-lift: 0 2px 4px oklch(0.3 0.02 120 / 5%), 0 24px 48px -24px oklch(0.35 0.03 140 / 28%);
+}
+
+:root {
+  --radius: 0.875rem;
+
+  --background: oklch(0.991 0.005 95);
+  --foreground: oklch(0.215 0.012 70);
+
+  --cream: oklch(0.972 0.011 92);
+  --sand: oklch(0.945 0.016 88);
+  --sage: oklch(0.64 0.045 145);
+  --sage-soft: oklch(0.905 0.025 145);
+
+  --card: oklch(1 0 0);
+  --card-foreground: var(--foreground);
+  --popover: oklch(1 0 0);
+  --popover-foreground: var(--foreground);
+
+  --primary: oklch(0.53 0.05 148);
+  --primary-foreground: oklch(0.99 0.005 95);
+
+  --secondary: oklch(0.955 0.014 92);
+  --secondary-foreground: oklch(0.3 0.015 70);
+
+  --muted: oklch(0.962 0.01 92);
+  --muted-foreground: oklch(0.505 0.014 75);
+
+  --accent: oklch(0.93 0.022 145);
+  --accent-foreground: oklch(0.32 0.04 148);
+
+  --destructive: oklch(0.56 0.19 27);
+  --destructive-foreground: oklch(0.99 0.005 95);
+
+  --border: oklch(0.9 0.012 90);
+  --input: oklch(0.888 0.014 90);
+  --ring: oklch(0.64 0.045 145);
+
+  /* brand accents — svijetli, koriste se samo kao mali highlighti */
+  --accent-1: oklch(0.68 0.095 168);
+  --accent-2: oklch(0.79 0.135 85);
+  --accent-3: oklch(0.68 0.115 240);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    font-synthesis-weight: none;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 3px;
+  }
+}
+
+@utility container-page {
+  width: 100%;
+  margin-inline: auto;
+  max-width: 76rem;
+  padding-inline: 1.25rem;
+}
+
+@utility eyebrow {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-muted-foreground);
+}
+
+@utility surface-card {
+  background-color: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-soft);
+}
+
+@utility organic-blob {
+  border-radius: 62% 38% 55% 45% / 48% 52% 48% 52%;
+}
+
+/* Kompaktniji vertikalni ritam između sekcija (samo desktop). */
+@media (min-width: 768px) {
+  main section.py-14 {
+    padding-top: 3rem;
+    padding-bottom: 3rem;
+  }
+  main section.pt-0 {
+    padding-top: 0;
+  }
+  main section.pb-0 {
+    padding-bottom: 0;
+  }
+}
