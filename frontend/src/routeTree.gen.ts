@@ -10,29 +10,46 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as KontaktRouteImport } from './routes/kontakt'
-import { Route as ONamaRouteImport } from './routes/o-nama'
-import { Route as PrivatnostRouteImport } from './routes/privatnost'
+import { Route as BiskupijeRouteImport } from './routes/biskupije'
+import { Route as BrojkeRouteImport } from './routes/brojke'
+import { Route as CrkveRouteImport } from './routes/crkve'
+import { Route as KartaRouteImport } from './routes/karta'
+import { Route as OProjektuRouteImport } from './routes/o-projektu'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as ZupeRouteImport } from './routes/zupe'
+import { Route as BiskupijaSlugRouteImport } from './routes/biskupija.$slug'
+import { Route as CrkvaSlugRouteImport } from './routes/crkva.$slug'
+import { Route as UstanovaSlugRouteImport } from './routes/ustanova.$slug'
+import { Route as ZupaSlugRouteImport } from './routes/zupa.$slug'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const KontaktRoute = KontaktRouteImport.update({
-  id: '/kontakt',
-  path: '/kontakt',
+const BiskupijeRoute = BiskupijeRouteImport.update({
+  id: '/biskupije',
+  path: '/biskupije',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ONamaRoute = ONamaRouteImport.update({
-  id: '/o-nama',
-  path: '/o-nama',
+const BrojkeRoute = BrojkeRouteImport.update({
+  id: '/brojke',
+  path: '/brojke',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PrivatnostRoute = PrivatnostRouteImport.update({
-  id: '/privatnost',
-  path: '/privatnost',
+const CrkveRoute = CrkveRouteImport.update({
+  id: '/crkve',
+  path: '/crkve',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KartaRoute = KartaRouteImport.update({
+  id: '/karta',
+  path: '/karta',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OProjektuRoute = OProjektuRouteImport.update({
+  id: '/o-projektu',
+  path: '/o-projektu',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
@@ -40,43 +57,133 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ZupeRoute = ZupeRouteImport.update({
+  id: '/zupe',
+  path: '/zupe',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BiskupijaSlugRoute = BiskupijaSlugRouteImport.update({
+  id: '/biskupija/$slug',
+  path: '/biskupija/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CrkvaSlugRoute = CrkvaSlugRouteImport.update({
+  id: '/crkva/$slug',
+  path: '/crkva/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UstanovaSlugRoute = UstanovaSlugRouteImport.update({
+  id: '/ustanova/$slug',
+  path: '/ustanova/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ZupaSlugRoute = ZupaSlugRouteImport.update({
+  id: '/zupa/$slug',
+  path: '/zupa/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/kontakt': typeof KontaktRoute
-  '/o-nama': typeof ONamaRoute
-  '/privatnost': typeof PrivatnostRoute
+  '/biskupije': typeof BiskupijeRoute
+  '/brojke': typeof BrojkeRoute
+  '/crkve': typeof CrkveRoute
+  '/karta': typeof KartaRoute
+  '/o-projektu': typeof OProjektuRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/zupe': typeof ZupeRoute
+  '/biskupija/$slug': typeof BiskupijaSlugRoute
+  '/crkva/$slug': typeof CrkvaSlugRoute
+  '/ustanova/$slug': typeof UstanovaSlugRoute
+  '/zupa/$slug': typeof ZupaSlugRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/kontakt': typeof KontaktRoute
-  '/o-nama': typeof ONamaRoute
-  '/privatnost': typeof PrivatnostRoute
+  '/biskupije': typeof BiskupijeRoute
+  '/brojke': typeof BrojkeRoute
+  '/crkve': typeof CrkveRoute
+  '/karta': typeof KartaRoute
+  '/o-projektu': typeof OProjektuRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/zupe': typeof ZupeRoute
+  '/biskupija/$slug': typeof BiskupijaSlugRoute
+  '/crkva/$slug': typeof CrkvaSlugRoute
+  '/ustanova/$slug': typeof UstanovaSlugRoute
+  '/zupa/$slug': typeof ZupaSlugRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/kontakt': typeof KontaktRoute
-  '/o-nama': typeof ONamaRoute
-  '/privatnost': typeof PrivatnostRoute
+  '/biskupije': typeof BiskupijeRoute
+  '/brojke': typeof BrojkeRoute
+  '/crkve': typeof CrkveRoute
+  '/karta': typeof KartaRoute
+  '/o-projektu': typeof OProjektuRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/zupe': typeof ZupeRoute
+  '/biskupija/$slug': typeof BiskupijaSlugRoute
+  '/crkva/$slug': typeof CrkvaSlugRoute
+  '/ustanova/$slug': typeof UstanovaSlugRoute
+  '/zupa/$slug': typeof ZupaSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/kontakt' | '/o-nama' | '/privatnost' | '/sitemap.xml'
+  fullPaths:
+    | '/'
+    | '/biskupije'
+    | '/brojke'
+    | '/crkve'
+    | '/karta'
+    | '/o-projektu'
+    | '/sitemap.xml'
+    | '/zupe'
+    | '/biskupija/$slug'
+    | '/crkva/$slug'
+    | '/ustanova/$slug'
+    | '/zupa/$slug'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/kontakt' | '/o-nama' | '/privatnost' | '/sitemap.xml'
-  id: '__root__' | '/' | '/kontakt' | '/o-nama' | '/privatnost' | '/sitemap.xml'
+  to:
+    | '/'
+    | '/biskupije'
+    | '/brojke'
+    | '/crkve'
+    | '/karta'
+    | '/o-projektu'
+    | '/sitemap.xml'
+    | '/zupe'
+    | '/biskupija/$slug'
+    | '/crkva/$slug'
+    | '/ustanova/$slug'
+    | '/zupa/$slug'
+  id:
+    | '__root__'
+    | '/'
+    | '/biskupije'
+    | '/brojke'
+    | '/crkve'
+    | '/karta'
+    | '/o-projektu'
+    | '/sitemap.xml'
+    | '/zupe'
+    | '/biskupija/$slug'
+    | '/crkva/$slug'
+    | '/ustanova/$slug'
+    | '/zupa/$slug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  KontaktRoute: typeof KontaktRoute
-  ONamaRoute: typeof ONamaRoute
-  PrivatnostRoute: typeof PrivatnostRoute
+  BiskupijeRoute: typeof BiskupijeRoute
+  BrojkeRoute: typeof BrojkeRoute
+  CrkveRoute: typeof CrkveRoute
+  KartaRoute: typeof KartaRoute
+  OProjektuRoute: typeof OProjektuRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  ZupeRoute: typeof ZupeRoute
+  BiskupijaSlugRoute: typeof BiskupijaSlugRoute
+  CrkvaSlugRoute: typeof CrkvaSlugRoute
+  UstanovaSlugRoute: typeof UstanovaSlugRoute
+  ZupaSlugRoute: typeof ZupaSlugRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -88,25 +195,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/kontakt': {
-      id: '/kontakt'
-      path: '/kontakt'
-      fullPath: '/kontakt'
-      preLoaderRoute: typeof KontaktRouteImport
+    '/biskupije': {
+      id: '/biskupije'
+      path: '/biskupije'
+      fullPath: '/biskupije'
+      preLoaderRoute: typeof BiskupijeRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/o-nama': {
-      id: '/o-nama'
-      path: '/o-nama'
-      fullPath: '/o-nama'
-      preLoaderRoute: typeof ONamaRouteImport
+    '/brojke': {
+      id: '/brojke'
+      path: '/brojke'
+      fullPath: '/brojke'
+      preLoaderRoute: typeof BrojkeRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/privatnost': {
-      id: '/privatnost'
-      path: '/privatnost'
-      fullPath: '/privatnost'
-      preLoaderRoute: typeof PrivatnostRouteImport
+    '/crkve': {
+      id: '/crkve'
+      path: '/crkve'
+      fullPath: '/crkve'
+      preLoaderRoute: typeof CrkveRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/karta': {
+      id: '/karta'
+      path: '/karta'
+      fullPath: '/karta'
+      preLoaderRoute: typeof KartaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/o-projektu': {
+      id: '/o-projektu'
+      path: '/o-projektu'
+      fullPath: '/o-projektu'
+      preLoaderRoute: typeof OProjektuRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sitemap.xml': {
@@ -116,15 +237,57 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/zupe': {
+      id: '/zupe'
+      path: '/zupe'
+      fullPath: '/zupe'
+      preLoaderRoute: typeof ZupeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/biskupija/$slug': {
+      id: '/biskupija/$slug'
+      path: '/biskupija/$slug'
+      fullPath: '/biskupija/$slug'
+      preLoaderRoute: typeof BiskupijaSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/crkva/$slug': {
+      id: '/crkva/$slug'
+      path: '/crkva/$slug'
+      fullPath: '/crkva/$slug'
+      preLoaderRoute: typeof CrkvaSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ustanova/$slug': {
+      id: '/ustanova/$slug'
+      path: '/ustanova/$slug'
+      fullPath: '/ustanova/$slug'
+      preLoaderRoute: typeof UstanovaSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/zupa/$slug': {
+      id: '/zupa/$slug'
+      path: '/zupa/$slug'
+      fullPath: '/zupa/$slug'
+      preLoaderRoute: typeof ZupaSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  KontaktRoute: KontaktRoute,
-  ONamaRoute: ONamaRoute,
-  PrivatnostRoute: PrivatnostRoute,
+  BiskupijeRoute: BiskupijeRoute,
+  BrojkeRoute: BrojkeRoute,
+  CrkveRoute: CrkveRoute,
+  KartaRoute: KartaRoute,
+  OProjektuRoute: OProjektuRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  ZupeRoute: ZupeRoute,
+  BiskupijaSlugRoute: BiskupijaSlugRoute,
+  CrkvaSlugRoute: CrkvaSlugRoute,
+  UstanovaSlugRoute: UstanovaSlugRoute,
+  ZupaSlugRoute: ZupaSlugRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

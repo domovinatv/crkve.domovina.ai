@@ -7,8 +7,9 @@
 /*
  * DESIGN SYSTEM
  *
- * Popunjava /intake iz sekcije "Vizualni identitet" u BRIEF.md.
- * Zadano: topla neutralna baza (off-white/cream), prigušen primary, near-black tekst.
+ * Katalog sakralnih objekata: pergamentna baza (topla off-white), duboka
+ * indigo-plava kao primary, zlatna kao jedini topli akcent. Nema jarkih ploha —
+ * fotografije crkava i karta nose boju, sučelje je pozadina.
  *
  * PRAVILA — vrijede bez iznimke:
  *   1. Nikad ne hardkodiraj boju u komponenti. Ni hex, ni rgb, ni Tailwind
@@ -55,10 +56,10 @@
   --color-sage-soft: var(--sage-soft);
   --color-sand: var(--sand);
 
-  /* brand accents — preimenuj u nešto smisleno za klijenta */
-  --color-accent-1: var(--accent-1);
-  --color-accent-2: var(--accent-2);
-  --color-accent-3: var(--accent-3);
+  /* Akcenti nose ZNAČENJE, ne ukras — svaki je jedan status u katalogu. */
+  --color-heritage: var(--accent-1); /* zaštićeno kulturno dobro */
+  --color-gap: var(--accent-2); /* rupa u podacima (župa bez crkve) */
+  --color-verified: var(--accent-3); /* lokacija nezavisno potvrđena */
 
   --color-sidebar: var(--card);
   --color-sidebar-foreground: var(--foreground);
@@ -69,8 +70,8 @@
   --color-sidebar-border: var(--border);
   --color-sidebar-ring: var(--ring);
 
-  --shadow-soft: 0 1px 2px oklch(0.3 0.02 120 / 4%), 0 12px 32px -18px oklch(0.35 0.03 140 / 22%);
-  --shadow-lift: 0 2px 4px oklch(0.3 0.02 120 / 5%), 0 24px 48px -24px oklch(0.35 0.03 140 / 28%);
+  --shadow-soft: 0 1px 2px oklch(0.3 0.02 265 / 4%), 0 12px 32px -18px oklch(0.32 0.04 265 / 20%);
+  --shadow-lift: 0 2px 4px oklch(0.3 0.02 265 / 5%), 0 24px 48px -24px oklch(0.32 0.04 265 / 26%);
 }
 
 :root {
@@ -81,15 +82,15 @@
 
   --cream: oklch(0.972 0.011 92);
   --sand: oklch(0.945 0.016 88);
-  --sage: oklch(0.64 0.045 145);
-  --sage-soft: oklch(0.905 0.025 145);
+  --sage: oklch(0.55 0.05 265);
+  --sage-soft: oklch(0.9 0.028 265);
 
   --card: oklch(1 0 0);
   --card-foreground: var(--foreground);
   --popover: oklch(1 0 0);
   --popover-foreground: var(--foreground);
 
-  --primary: oklch(0.53 0.05 148);
+  --primary: oklch(0.42 0.075 265);
   --primary-foreground: oklch(0.99 0.005 95);
 
   --secondary: oklch(0.955 0.014 92);
@@ -98,20 +99,40 @@
   --muted: oklch(0.962 0.01 92);
   --muted-foreground: oklch(0.505 0.014 75);
 
-  --accent: oklch(0.93 0.022 145);
-  --accent-foreground: oklch(0.32 0.04 148);
+  --accent: oklch(0.928 0.025 265);
+  --accent-foreground: oklch(0.34 0.06 265);
 
   --destructive: oklch(0.56 0.19 27);
   --destructive-foreground: oklch(0.99 0.005 95);
 
   --border: oklch(0.9 0.012 90);
   --input: oklch(0.888 0.014 90);
-  --ring: oklch(0.64 0.045 145);
+  --ring: oklch(0.55 0.06 265);
 
-  /* brand accents — svijetli, koriste se samo kao mali highlighti */
-  --accent-1: oklch(0.68 0.095 168);
-  --accent-2: oklch(0.79 0.135 85);
-  --accent-3: oklch(0.68 0.115 240);
+  /*
+   * Boje karte. NAMJERNO u hexu, a ne u oklch kao ostatak sustava: MapLibre
+   * ima vlastiti parser boja i ne jamči CSS Color 4, a paint svojstva primaju
+   * string koji komponenta čita iz getComputedStyle. Ovo je jedina iznimka od
+   * pravila "sve u oklch", i vrijedi samo za slojeve karte.
+   */
+  --map-crkva: #4a5da8;
+  --map-kapela: #7b8ac4;
+  --map-katedrala: #8a5a1f;
+  --map-bazilika: #a8791f;
+  --map-svetiste: #b0872a;
+  --map-samostan: #4f7a6a;
+  --map-pravoslavna: #8a4b73;
+  --map-dzamija: #2f7d72;
+  --map-sinagoga: #5c6bb5;
+  --map-poklonac: #9aa1ad;
+  --map-ostalo: #8d8d94;
+  --map-cluster: #3d4f96;
+  --map-parish-ring: #b4442a;
+
+  /* Mali highlighti (badge, točka, ikona), nikad velike plohe. */
+  --accent-1: oklch(0.62 0.115 72); /* zlatna — zaštićeno kulturno dobro */
+  --accent-2: oklch(0.58 0.17 25); /* opeka — rupa u podacima */
+  --accent-3: oklch(0.55 0.09 200); /* tirkiz — potvrđena lokacija */
 }
 
 @layer base {

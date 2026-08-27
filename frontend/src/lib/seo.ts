@@ -1,35 +1,38 @@
-import { site, openingHours } from "@/data/site";
+import { site } from "@/data/site";
 
-/** Pretvara relativni path u apsolutni URL (canonical i og:url traže apsolutni). */
+/** Relativan path → apsolutni URL (canonical i og:url traže apsolutni). */
 function abs(path: string) {
   return path.startsWith("http") ? path : `${site.url.replace(/\/$/, "")}${path}`;
 }
 
 type MetaArgs = {
-  /** Puni <title>. Uključi lokaciju gdje je prirodno, bez keyword stuffinga. */
+  /** Puni <title>. Jedinstven po stranici. */
   title: string;
   /** 140–160 znakova. Jedinstven po stranici. */
   description: string;
-  /** Relativan path rute, npr. "/kontakt". */
+  /** Relativan path rute, npr. "/crkva/sv-marko-zagreb". */
   path: string;
   type?: "website" | "article";
-  /** Apsolutni URL naslovne fotografije za dijeljenje (og:image). */
+  /** Apsolutni URL naslovne fotografije (og:image). */
   image?: string | undefined;
+  /** Stranica koja ne smije u indeks (npr. filtrirani prikaz). */
+  noindex?: boolean;
 };
 
-export function pageHead({ title, description, path, type = "website", image }: MetaArgs) {
+export function pageHead({ title, description, path, type = "website", image, noindex }: MetaArgs) {
   const url = abs(path);
   return {
     meta: [
       { title },
       { name: "description", content: description },
+      ...(noindex ? [{ name: "robots", content: "noindex,follow" }] : []),
       { property: "og:title", content: title },
       { property: "og:description", content: description },
       { property: "og:type", content: type },
       { property: "og:url", content: url },
       { property: "og:site_name", content: site.name },
       { property: "og:locale", content: "hr_HR" },
-      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:card", content: image ? "summary_large_image" : "summary" },
       { name: "twitter:title", content: title },
       { name: "twitter:description", content: description },
       ...(image
@@ -60,70 +63,106 @@ export function breadcrumbLd(items: { name: string; path: string }[]) {
 }
 
 /**
- * LocalBusiness za hrvatski lokalni biznis. Ide u __root.tsx pa vrijedi
- * za cijeli site. Prazna polja iz site.ts se izostavljaju — Google radije
- * nema polje nego prazno polje.
+ * Dataset za cijeli katalog — ide u __root.tsx pa vrijedi svugdje.
+ *
+ * Namjerno Dataset, a ne LocalBusiness kako je bilo u templateu: ovo nije
+ * poslovni subjekt nego skup otvorenih podataka. LocalBusiness bi Googleu
+ * tvrdio da crkve.domovina.ai negdje ima adresu i radno vrijeme.
  */
-export function localBusinessLd() {
+export function datasetLd() {
   return {
     "@context": "https://schema.org",
-    "@type": "LocalBusiness",
+    "@type": "Dataset",
     name: site.fullName,
     alternateName: site.name,
+    description: site.slogan,
     url: site.url,
-    ...(site.slogan ? { slogan: site.slogan } : {}),
-    telephone: site.phone,
-    email: site.email,
-    address: {
-      "@type": "PostalAddress",
-      streetAddress: site.street,
-      addressLocality: site.city,
-      postalCode: site.postalCode,
-      addressCountry: "HR",
-    },
-    areaServed: site.city,
-    ...(openingHours.length
-      ? {
-          openingHoursSpecification: openingHours.map((slot) => ({
-            "@type": "OpeningHoursSpecification",
-            dayOfWeek: slot.days,
-            description: slot.hours,
-          })),
-        }
-      : {}),
-    ...(site.instagram || site.facebook
-      ? { sameAs: [site.instagram, site.facebook].filter(Boolean) }
-      : {}),
+    inLanguage: "hr",
+    license: "https://opendatacommons.org/licenses/odbl/1-0/",
+    isAccessibleForFree: true,
+    creator: { "@type": "Organization", name: "DOMOVINA.ai", url: site.url },
+    spatialCoverage: { "@type": "Place", name: "Hrvatska" },
+    distribution: [
+      {
+        "@type": "DataDownload",
+        encodingFormat: "application/geo+json",
+        contentUrl: `${site.url}/data/crkve-index.json`,
+      },
+    ],
   };
 }
 
 /**
- * Za pojedinu uslugu/program koji ima svoju stranicu.
- * Ako klijent prodaje tečajeve, zamijeni "@type" u "Course".
+ * Jedna GRAĐEVINA. `PlaceOfWorship` je pravi schema.org tip i za džamiju i
+ * za sinagogu; `CatholicChurch` bi lagao za 400-injak nekatoličkih objekata.
  */
-export function serviceLd(args: {
+export function placeOfWorshipLd(args: {
   name: string;
-  description: string;
-  audience?: string;
-  price?: string;
-  currency?: string;
+  path: string;
+  lat: number;
+  lng: number;
+  address?: string | undefined;
+  city?: string | undefined;
+  image?: string | undefined;
+  description?: string | undefined;
 }) {
   return {
     type: "application/ld+json",
     children: JSON.stringify({
       "@context": "https://schema.org",
-      "@type": "Service",
+      "@type": "PlaceOfWorship",
       name: args.name,
-      description: args.description,
-      provider: localBusinessLd(),
-      areaServed: site.city,
-      ...(args.audience ? { audience: { "@type": "Audience", audienceType: args.audience } } : {}),
-      ...(args.price
+      url: abs(args.path),
+      geo: { "@type": "GeoCoordinates", latitude: args.lat, longitude: args.lng },
+      ...(args.description ? { description: args.description } : {}),
+      ...(args.image ? { image: args.image } : {}),
+      ...(args.address || args.city
         ? {
-            offers: {
-              "@type": "Offer",
-              price: args.price,
-              priceCurrency: args.currency ?? "EUR",
+            address: {
+              "@type": "PostalAddress",
+              ...(args.address ? { streetAddress: args.address } : {}),
+              ...(args.city ? { addressLocality: args.city } : {}),
+              addressCountry: "HR",
+            },
+          }
+        : {}),
+    }),
+  };
+}
+
+/** Jedna PRAVNA OSOBA (župa, samostan, crkvena općina). */
+export function organizationLd(args: {
+  name: string;
+  path: string;
+  oib?: string | undefined;
+  address?: string | undefined;
+  city?: string | undefined;
+  phone?: string | undefined;
+  email?: string | undefined;
+  website?: string | undefined;
+  parent?: string | undefined;
+}) {
+  return {
+    type: "application/ld+json",
+    children: JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      name: args.name,
+      url: abs(args.path),
+      ...(args.oib ? { vatID: `HR${args.oib}`, taxID: args.oib } : {}),
+      ...(args.phone ? { telephone: args.phone } : {}),
+      ...(args.email ? { email: args.email } : {}),
+      ...(args.website ? { sameAs: [args.website] } : {}),
+      ...(args.parent
+        ? { parentOrganization: { "@type": "Organization", name: args.parent } }
+        : {}),
+      ...(args.address || args.city
+        ? {
+            address: {
+              "@type": "PostalAddress",
+              ...(args.address ? { streetAddress: args.address } : {}),
+              ...(args.city ? { addressLocality: args.city } : {}),
+              addressCountry: "HR",
             },
           }
         : {}),

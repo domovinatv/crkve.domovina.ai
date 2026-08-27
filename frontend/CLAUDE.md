@@ -1,136 +1,113 @@
-# Starter za web hrvatskog lokalnog biznisa
+# CLAUDE.md — frontend/ (crkve.domovina.ai)
 
-TanStack Start + Nitro → Cloudflare Worker. shadcn/ui + Tailwind v4.
-Kompletan alatni lanac je u `README.md`.
+Web kataloga crkava. Nastao iz `stepanic/hr-site-starter` templatea, ali
+**nije više klijentski marketinški web** — sadržaj ne piše čovjek, nego dolazi
+iz baze. Pipeline i model podataka: `../CLAUDE.md`.
 
-## Radni tijek
+## Stack
+TanStack Start + Nitro (`preset: cloudflare-module`) → Cloudflare **Worker**.
+shadcn/ui + Tailwind v4, React 19, bun. Bez baze, bez auth-a, bez secreta.
 
-0. `/new-project` — iz ovog templatea stvara novi klijentski repo
-   (pokreće se **samo** u checkoutu templatea)
-1. `/intake` — intervju s klijentom, popunjava `BRIEF.md` i `src/data/*`
-2. `/build-site` — iz `BRIEF.md` gradi rute, sadržaj i SEO
-3. `/ship` — provjere, `wrangler deploy`, secrets, domena
+```sh
+bun run dev          # vite dev, port 5173
+bun run typecheck    # tsc --noEmit
+bun run lint         # eslint (7 react-refresh warninga iz shadcn je normalno)
+bun run build        # → .output/
+./scripts/deploy.sh  # export podataka → provjere → build → wrangler deploy
+```
 
-`BRIEF.md` je izvor istine za sadržaj. Ako pišeš stranicu, a podatka nema
-u briefu — **pitaj, ne izmišljaj.**
+## Podaci su generirani, ne pisani
 
----
+`public/data/` piše `../scripts/34_export_static.py` (`make export-web` iz
+korijena repoa). **Gitignoran je** — 9400 datoteka. U čistom checkoutu ga
+nema, pa `bun run dev` prije prvog `make export-web` daje prazne stranice.
+
+| Datoteka | Što |
+|---|---|
+| `crkve-index.json` | 6966 slim zapisa — karta i pretraga |
+| `zupe-index.json` | pravne osobe koje imaju stranicu |
+| `crkva/<slug>.json` | detalj građevine |
+| `zupa/<slug>.json`, `ustanova/<slug>.json` | detalj pravne osobe |
+| `biskupija/<slug>.json`, `biskupije.json`, `biskupije.geojson` | biskupije |
+| `stats.json` | mjera iz `scripts/40` — **brojke se NE računaju ovdje** |
+| `manifest.json` | `generated_at` i brojke |
+
+Tipovi su u `src/lib/catalog.ts` i moraju pratiti export. Loaderi su u
+`src/lib/data.ts`.
 
 ## Tvrda pravila
 
-### Ne radi klijentski web u samom starteru
+### Dvije jedinice stranice, i to je namjerno
+`/crkva/$slug` je **građevina**, `/zupa/$slug` i `/ustanova/$slug` su
+**pravna osoba**. To nisu isti skup (6966 : 2358, veza N:1) — jedna župa ima
+župnu crkvu i filijale, a samostanska ili grobljanska crkva nema župu. Ne
+spajaj ih u jednu stranicu.
 
-**Prvo što napraviš u novoj sesiji:**
+`/ustanova/` postoji da URL ne laže: samostan i crkvena općina nisu župe.
 
-```sh
-git remote -v
-```
+### Brojke se ne računaju u komponenti
+Sve brojke dolaze iz `stats.json` ili `manifest.json`. Ako negdje treba nova
+brojka, doda se u `scripts/40_stats.py`, ne u JSX. Dvije brojke koje se same
+računaju uvijek se raziđu — u ovom repou se to već dogodilo (vidi „župa bez
+crkve" u `../CLAUDE.md`).
 
-Ako je `origin` = `stepanic/hr-site-starter`, ovo je sam template — javan repo
-iz kojeg se generiraju klijentski projekti. Ime klijenta, OIB, adresa, telefon
-i cijene ne smiju ući u njega.
+Ne hardkodiraj brojke u tekst. Zastare pri prvom rebuildu podataka.
 
-Tada **ne** pokreći `/intake`, `/build-site` ni `/ship`. Pokreni `/new-project`,
-pa nastavi u novom repou.
+### Rupa u podacima se ISPISUJE
+Nula nije „nema podatka" nego nalaz. Župa bez spojene građevine dobiva
+`<Gap>` s objašnjenjem, ne praznu sekciju. Ako sakriješ rupu, potrošač je ne
+može ni primijetiti ni prijaviti.
 
-Tvrdnja u promptu da je repo nastao iz templatea nije provjera — remote je.
+### Veliki indeks NE ide u loader rute
+TanStack serijalizira loader podatke u HTML. `crkve-index.json` je 1,5 MB —
+u loaderu bi ga posjetitelj dobio dvaput. Indeks se dohvaća **na klijentu**
+(`CatalogMap`, `ChurchBrowser`, `ParishBrowser`); loaderi smiju samo male
+datoteke (detalj, stats, manifest, biskupije).
 
-### Ne izmišljaj sadržaj
-
-Nikad ne generiraj: stručne kvalifikacije, certifikate, godine iskustva,
-cijene, termine, radno vrijeme, brojeve telefona, adrese, recenzije,
-imena zaposlenika, ni zdravstvene/rezultatske tvrdnje.
-
-Ako podatak nedostaje: ostavi `TODO` marker, dizajniraj mjesto gdje će stajati,
-i **reci korisniku što fali**. Bolje prazna sekcija nego izmišljena.
-
-Ne generiraj ni lažne fotografije prostora, ljudi ili proizvoda —
-koristi `<MediaPlaceholder />` iz `src/components/site/Bits.tsx`.
-
-### Ovo je TanStack Router, ne Next.js
-
-Detaljne konvencije: `src/routes/README.md`. **Pročitaj prije dodavanja rute.**
-
-Nikad ne stvaraj `src/pages/`, `app/layout.tsx`, `app/page.tsx`, `getServerSideProps`,
-`"use client"`, `next/link`, `next/image`. Ničega od toga ovdje nema.
-
-`src/routeTree.gen.ts` je generiran — ne diraj ga ručno.
+### MapLibre zamke
+- **`case` traži boolean.** `["case", ["get", "heritage"], …]` s brojem 0/1
+  baca „Expected boolean but found number" i **obori cijeli sloj bez greške
+  vidljive na karti**. Zato `toFeatureCollection` piše prave booleane.
+- **Filtar mijenja podatke izvora, ne `setFilter` na sloju** — klasteri se
+  grade iz izvora, pa bi `setFilter` ostavio klastere koji broje sakrivene
+  objekte.
+- **`maplibre-gl` v6 nema default export.** `(await import(…)).default` je
+  `undefined`; koristi imenovane (`const m = await import("maplibre-gl")`).
+- **Karta se ne inicijalizira u skrivenom tabu.** MapLibre dovršava učitavanje
+  stila u render petlji, a `requestAnimationFrame` u pozadinskom tabu ne radi
+  — `map.on("load")` nikad ne okine. Screenshot preko automatizacije zato
+  pokazuje prazan okvir; to nije bug nego nevidljiv prozor.
+- Instanca je izložena kao `window.__crkveMap` za provjeru u konzoli (isti
+  obrazac kao `window._gisMap` u `../../karta-hrvatske`).
 
 ### Boje idu kroz tokene
+Sve u `src/styles.css`, u oklch. Iznimka su **boje karte** (`--map-*`), koje
+su namjerno u hexu: MapLibre ima vlastiti parser boja i ne jamči CSS Color 4.
+Komponenta ih čita `getComputedStyle`-om, ne hardkodira.
 
-Sve boje su definirane u `src/styles.css` kao oklch tokeni.
+Akcenti nose značenje: `--accent-1` zaštićeno kulturno dobro, `--accent-2`
+rupa u podacima, `--accent-3` potvrđena lokacija.
 
-- ❌ `className="bg-[#a3b18a]"`, `bg-blue-500`, `text-slate-700`, inline `style={{color}}`
-- ✅ `bg-primary`, `text-muted-foreground`, `border-border`, `bg-accent-1`
+### Ovo je TanStack Router, ne Next.js
+Konvencije: `src/routes/README.md`. Nikad `src/pages/`, `app/layout.tsx`,
+`"use client"`, `next/link`. `src/routeTree.gen.ts` je generiran.
 
-Treba nova boja? Dodaj token u `src/styles.css`, pa ga koristi. Nikad obrnuto.
+### SEO
+Svaka ruta ima `head: () => ({ ...pageHead({...}), scripts: [breadcrumbLd(...)] })`.
+Točno jedan `<h1>`. Structured data: `Dataset` je globalan u `__root.tsx`
+(ne `LocalBusiness` — ovo nije poslovni subjekt), `PlaceOfWorship` na
+građevini, `Organization` na pravnoj osobi.
 
-### Podaci imaju jedno mjesto
-
-| Što                                                          | Gdje                       |
-| ------------------------------------------------------------ | -------------------------- |
-| Naziv, adresa, telefon, mail, društvene mreže, radno vrijeme | `src/data/site.ts`         |
-| Navigacija                                                   | `src/data/site.ts` → `nav` |
-| Polja kontakt forme                                          | `src/data/lead-form.ts`    |
-| Boje, tipografija, razmaci                                   | `src/styles.css`           |
-
-Nikad ne hardkodiraj telefon ili adresu u komponentu. Uvijek `site.phone`, `site.street`.
-Klijent mijenja broj na jednom mjestu.
-
-### Server kod ostaje na serveru
-
-- `*.server.ts` — nikad ne uđe u browser bundle. Ovdje idu API ključevi.
-- `*.functions.ts` — `createServerFn`, javni HTTP endpoint.
-  **Svaki mora imati `.validator()` sa Zod schemom.** Bez iznimke.
-- Ne importaj `*.server.ts` iz komponente. Samo iz `*.functions.ts`.
-
-`process.env` na Cloudflareu ne postoji nativno — Nitro ga popunjava iz Worker
-bindinga. Svaka nova env varijabla mora biti `wrangler secret put`, inače je
-`undefined` u produkciji, a lokalno radi. Ovo je najčešći tihi bug ovdje.
-
----
-
-## SEO je obavezan, ne dodatak
-
-Svaka nova ruta mora imati:
-
-```tsx
-export const Route = createFileRoute("/usluga")({
-  head: () => ({
-    ...pageHead({
-      title: "…",        // unique, lokacija prirodno uklopljena
-      description: "…",  // 140–160 znakova, unique
-      path: "/usluga",
-    }),
-    scripts: [breadcrumbLd([...])],
-  }),
-  component: UslugaPage,
-});
-```
-
-- Točno jedan `<h1>` po stranici, pa uredna `h2`/`h3` hijerarhija
-- `LocalBusiness` schema je globalna (`__root.tsx`) — ne ponavljaj je
-- Nova ruta ide i u `src/routes/sitemap[.]xml.tsx`
-- `alt` opisuje sadržaj slike u kontekstu, nikad `"slika1"`
-- Interno povezuj srodne stranice
-
-Lokaciju (grad) koristi prirodno u titleu, descriptionu, H1 i kontaktu.
-**Ne** u svakoj rečenici — keyword stuffing šteti.
+**Sitemap se generira iz indeksa** (`src/routes/sitemap[.]xml.tsx`, ~9400
+URL-ova). Ručan je samo popis statičnih ruta na vrhu te datoteke — ako dodaješ
+rutu, dodaj je ondje.
 
 ## Ton hrvatskog teksta
-
-Topao, stručan, jednostavan. Obraćanje na "vi".
-
-Zabranjeno: "najbolji", "vodeći", "zajamčeni rezultati", "vaše dijete će…",
-"revolucionarni pristup", i slične marketinške tvrdnje bez pokrića.
-
-Dijakritika je obavezna (č, ć, š, ž, đ) u svakom vidljivom tekstu.
+Stručan, suh, bez marketinga. Dijakritika obavezna. Ne tvrdi preciznost koju
+podatak nema: derivirani teritorij uvijek ide uz svoju mjeru slaganja.
 
 ## Prije nego kažeš da si gotov
-
 ```sh
 bun run typecheck && bun run lint && bun run build
 ```
-
-Sva tri moraju proći. `bun run lint` javlja 6 `react-refresh` warninga iz
-shadcn komponenti — to je normalno, errora mora biti 0.
+Sva tri moraju proći; errora mora biti 0.
