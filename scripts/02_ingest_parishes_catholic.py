@@ -30,7 +30,7 @@ sys.path.insert(0, str(ROOT))
 
 from src import titular  # noqa: E402
 from src.datagovhr import KATOLICKE_PRAVNE_OSOBE, fetch, split_sjediste  # noqa: E402
-from src.db import connect, merge_source, upsert_diocese, upsert_parish  # noqa: E402
+from src.db import connect, mark_duplicates, merge_source, upsert_diocese, upsert_parish  # noqa: E402
 from src.normalize import slugify, title_case_hr  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -137,9 +137,12 @@ def run() -> None:
 
         # Biskupije koje se pojavljuju samo kao strani ključ u BISKUPIJA_
         # NADBISKUPIJA (a nemaju vlastiti zapis) — dodaj ih da popis bude pun.
+        mark_duplicates(conn)
         for row in conn.execute(
             "SELECT diocese, COUNT(*) n FROM parishes "
-            "WHERE diocese IS NOT NULL AND kind = 'zupa' GROUP BY diocese"
+            "WHERE diocese IS NOT NULL AND kind = 'zupa' "
+            "AND (registry_status IS NULL OR registry_status LIKE 'AKTIV%') "
+            "AND duplicate_of IS NULL GROUP BY diocese"
         ).fetchall():
             d = row["diocese"]
             upsert_diocese(

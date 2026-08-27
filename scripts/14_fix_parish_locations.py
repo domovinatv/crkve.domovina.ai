@@ -8,6 +8,11 @@ Korekcija je namjerno konzervativna — pomiče samo kad je odredište
 **jednoznačno**: ili je u `OVERRIDES` (s izvorom), ili biskupija reže
 kandidate na točno jedan. Sve ostalo se prijavljuje i ostavlja na miru.
 
+Jedna iznimka od „ostavlja na miru": točka udaljena od SVAKOG naselja koje
+evidencija imenuje (`MAX_SJEDISTE_KM`) briše se i kad se odredište ne zna.
+Prazna koordinata je poštena, a izmišljena na karti izgleda jednako
+uvjerljivo kao i sve ostale.
+
 Nova koordinata je crkva istog titulara u tom naselju ako postoji (razina
 zgrade), inače težište naselja (razina mjesta). `geocode_source` to razlikuje,
 pa se u exportu i dalje zna koliko je koja točka precizna.
@@ -37,6 +42,7 @@ PARISH_SQL = """
 SELECT id, name, titular, city, county, diocese, lat, lng, registry_id, geocode_source
 FROM parishes
 WHERE kind = 'zupa' AND (registry_status IS NULL OR registry_status LIKE 'AKTIV%')
+  AND duplicate_of IS NULL
 ORDER BY id
 """
 
@@ -74,6 +80,18 @@ def run(dry_run: bool = False) -> None:
             fix = parish_geo.resolve(r, counties)
             if not fix:
                 stats["ostaje"] += 1
+                continue
+
+            if isinstance(fix, parish_geo.Drop):
+                log.info("%s → BEZ KOORDINATE | %s", r["name"][:44], fix.reason)
+                stats["obrisano"] += 1
+                if not dry_run:
+                    conn.execute(
+                        "UPDATE parishes SET lat = NULL, lng = NULL, county = NULL, "
+                        "geocode_source = NULL, notes = ?, "
+                        "updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                        (f"koordinata odbačena: {fix.reason}", r["id"]),
+                    )
                 continue
 
             hit = _seat_in(conn, fix.target, r["titular"])

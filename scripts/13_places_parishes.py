@@ -68,6 +68,7 @@ def run(limit: int | None = None, verify_only: bool = False) -> None:
             LEFT JOIN churches c ON c.parish_id = p.id AND c.is_parish_church = 1
             WHERE p.kind IN ({placeholders})
               AND (p.registry_status IS NULL OR p.registry_status LIKE 'AKTIV%')
+              AND p.duplicate_of IS NULL
             ORDER BY (c.id IS NULL) DESC, p.id
             """,
             PARISH_KINDS,

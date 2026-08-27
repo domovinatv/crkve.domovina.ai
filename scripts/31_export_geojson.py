@@ -68,6 +68,7 @@ LEFT JOIN churches pc ON pc.id = (
     ORDER BY c2.id LIMIT 1)
 WHERE p.lat IS NOT NULL AND p.lng IS NOT NULL
   AND (p.registry_status IS NULL OR p.registry_status LIKE 'AKTIV%')
+  AND p.duplicate_of IS NULL
 ORDER BY p.id
 """
 

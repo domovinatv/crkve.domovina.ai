@@ -157,3 +157,114 @@ Provjereno na spornim mjestima nad `biskupije.geojson`:
   Prgomet — napuhuju `parish_count`.
 - Usamljena krivo smještena župa i dalje se može sama zaštititi (posljedica
   praga 1). Hvata se samo ručno, OVERRIDE-om s izvorom.
+
+---
+
+# Drugi krug: preostale greške (2026-08-27)
+
+Sva tri detektora vraćena su na **aktualne** podatke, umjesto da se popravlja
+lista imena iz prvog kruga. Ta lista je bila zastarjela: Slivno, Dobranje i
+Soline u međuvremenu sjede točno.
+
+| detektor | prije | sada | nalaz |
+|---|---|---|---|
+| A — točka izvan imenovanog naselja | 94 | 85 | većina je normalno (župni ured izvan naselja); tek 17 je > 8 km |
+| B — biskupija se ne slaže sa susjedima | 26 | 1 | Sućuraj, i to je **ispravno** (Hvar, a susjedi na kopnu) |
+| C — medijan do vlastitih crkava > 8 km | 12 | 5 | svih 5 ispravno: Senj, Gračac, Klis, Plitvice, Oprisavci — velike ruralne župe |
+
+## Odbačena ideja: „adresa imenuje naselje"
+
+Evidencija u `address` često piše pravo mjesto („Sveti Petar Čvrstec 39" dok
+`city` kaže „Križevci"). Izgledalo je kao pravilo koje bi riješilo ostatak
+automatski. **Izmjereno: ne.** Od 540 župa čija adresa jednoznačno pogađa
+neko naselje, 43 ima točku izvan njega — a od 17 najvećih odstupanja **16 je
+lažno**, jer je riječ o ulici koja se zove kao neko naselje:
+
+| adresa | stvarno | pravilo bi odvuklo u |
+|---|---|---|
+| „Kaptol 3", Zagreb | zagrebački Kaptol | Kaptol kod Požege, 142 km |
+| „Dubovac 7", Karlovac | karlovački Dubovac | Dubovac kod G. Bogićevaca, 135 km |
+| „Malo Selo 3", Mokošica | ulica u Dubrovniku | Malo Selo kod Delnica, 409 km |
+| „Stari grad 76", Lovran | ulica u Lovranu | Stari Grad na Hvaru, 299 km |
+
+Ostaje kao **detektor**, nikad kao popravljač.
+
+## Novo pravilo: točka koja nije ni blizu (`Drop`)
+
+Umjesto adrese, mjera je udaljenost do najbližeg naselja **imena koje piše u
+evidenciji**. Raspodjela nad svih 1562 župe:
+
+```
+> 10 km: 17     > 20 km: 6      > 30 km: 4
+> 15 km:  7     > 25 km: 5      > 60 km: 4
+```
+
+Iznad 30 km ostaju četiri, a tri su naši vlastiti (ispravni) OVERRIDE-i.
+Četvrti je prava greška. Ispod 30 km upada Žirje (upisano na „Šibenik", otok
+je 22 km od grada) — zato prag baš ondje.
+
+Ishod je nov: ako je kandidat jedan → premjesti; ako ih je više → **obriši
+koordinatu**. Prazna koordinata je poštena („ne znamo"), a izmišljena na
+karti izgleda jednako uvjerljivo kao i sve ostale.
+
+Time je pokrivena i **Križevačka eparhija**, koju izvod županija namjerno
+preskače (preklapa se sa svim latinskim biskupijama) pa joj dotad nitko nije
+provjeravao sjedišta. Njezina župa sv. Mihajla Arkanđela u Prgomelju sjedila
+je u **Dubrovniku, 314 km** od oba Prgomelja (Pakrac i Bjelovar). Koje je
+pravo, evidencija ne kaže — koordinata je odbačena.
+
+## Šest ispravaka unutar iste biskupije
+
+Ove izvod županija ne može vidjeti jer je i kriva i prava lokacija u istoj
+županiji; greška je 9–15 km, ne 200. Svaka je provjerena u adresaru nadležne
+biskupije.
+
+| reg. ID | župa | bilo | treba | izvor |
+|---|---|---|---|---|
+| 701383 | Male Gospe | Bol (Brač) | **Selca kod Starog Grada** (Hvar) | hvarskabiskupija.hr: „Selca kod Starog Grada br. 20, 21460 Stari Grad" |
+| 701272 | sv. Ivana Krstitelja | Povlja | **Bol** | hvarskabiskupija.hr: „Pjaca Joze Bodlovića 1, 21420 Bol" — ista adresa kao u evidenciji; povaljska ima „Lokva 1" |
+| 702192 | Rođenja Marijina | Labin | **Rakalj** | biskupija-porecko-pulska.hr: „RAKALJ — župa Rođenja BDM" |
+| 702428 | sv. Ivana Krstitelja | Labinci | **Majkusi** | isto: „SVETI IVAN OD ŠTERNE, Majkusi 1, 52463 Višnjan" |
+| 700625 | sv. Ivana Krst. | Katuni | **Slime** | smn.hr/slime |
+| 702420 | Uzvišenja sv. Križa | Perušić | **Gornji Vaganac** | gospicko-senjska-biskupija.hr (uprava iz Drežnik Grada) + u OSM-u crkva istog titulara ondje |
+
+Zadnji je zanimljiv: adresar kaže „Vaganac", a DGU ima tri (Vaganac kod
+Gospića te Donji i Gornji Vaganac kod Plitvica). Presudio je **vlastiti
+katalog** — OSM ima „crkva Uzvišenja Svetog Križa" u Gornjem Vagancu.
+
+## Dvostruki upisi: tvrdnja iz prvog kruga bila je preširoka
+
+Prvi krug je naveo dva („Prizna", „Prgomet"). Izmjereno:
+
+- **Prizna nije problem** — jedan od dva upisa ima `registry_status =
+  PRESTANAK`, pa ga svi filtri ionako izbacuju.
+- **Prgomet jest** — dva evidencijska broja (1.617 i 1.1296), ista adresa,
+  tri mjeseca razmaka, oba AKTIVAN, nijedan nema OIB.
+
+To je **jedina** prava dvostrukost među župama. Rješava je kolona
+`parishes.duplicate_of` — zasebna, jer je to naša prosudba, a ne podatak:
+država za oba upisa doista piše AKTIVAN. Signatura je stroga (isti
+kind + naziv + mjesto + **adresa**, nijedan bez OIB-a); labavija bi spojila
+dvije stvarne zagrebačke „ŽUPA SV. MARKA EVANĐELISTE" i tiho izgubila 6
+zapisa.
+
+## Stanje
+
+```
+14_fix_parish_locations   17 premješteno, 1 koordinata odbačena
+  ponovljeni run          0                    ← i dalje idempotentno
+katoličkih župa           1563 zapisa → 1561 aktivnih i različitih
+župa bez župne crkve      487 (bez ijedne: 421)   ← bilo 489 / 424
+```
+
+## Ostaje otvoreno
+
+- **702309, ŽUPA SV. JURJA, „Brdo - Berda"** — evidencija normalizirala naziv
+  u bujsko Brdo-Berda, a Porečka i pulska ima „BRDO — župa Sv. Jurja
+  mučenika, Brdo, **52232 Kršan**". To Brdo **nije DGU naselje** (zaselak),
+  pa nema valjanog odredišta. Točka je zasad u Oprtlju.
+- Usamljena krivo smještena župa i dalje se može sama zaštititi (posljedica
+  praga 1 u izvodu županija). Hvata se samo OVERRIDE-om, s izvorom.
+- Detektor A ima još 10-ak slučajeva u pojasu 8–15 km gdje se pola pokaže
+  ispravnim (Zagreb→Sesvete, Križevci→Sveti Petar Čvrstec, Raša→Koromačno
+  — svima adresa potvrđuje točku). Nije ih sigurno automatizirati.

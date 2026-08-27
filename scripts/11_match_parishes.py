@@ -71,7 +71,8 @@ def run(dry_run: bool = False) -> None:
         placeholders = ", ".join("?" * len(PARISH_KINDS))
         parishes = conn.execute(
             f"SELECT * FROM parishes WHERE kind IN ({placeholders}) "
-            "AND (registry_status IS NULL OR registry_status LIKE 'AKTIV%')",
+            "AND (registry_status IS NULL OR registry_status LIKE 'AKTIV%') "
+            "AND duplicate_of IS NULL",
             PARISH_KINDS,
         ).fetchall()
         log.info("pravnih osoba za spajanje: %d | građevina: %d",

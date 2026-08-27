@@ -83,6 +83,29 @@ OVERRIDES: dict[str, tuple[str, str, str]] = {
     "702532": ("Sesvete", "Pleternica",
                "sam naziv u evidenciji glasi ŽUPA SVIH SVETIH, POŽEŠKE "
                "SESVETE — Požeška biskupija, a ne zagrebačke Sesvete"),
+    # Ove je Places spustio unutar ISTE biskupije i ISTE županije, pa ih izvod
+    # županija ne može vidjeti — greška je 9–15 km, ne 200. Svaka je
+    # provjerena u adresaru nadležne biskupije.
+    "701383": ("Selca kod Starog Grada", "Stari Grad",
+               "Hvarska biskupija, adresar: Župa Male Gospe, Selca kod Starog "
+               "Grada br. 20, 21460 Stari Grad — točka je bila na Braču"),
+    "701272": ("Bol", "Bol",
+               "Hvarska biskupija, adresar: Župa sv. Ivana Krstitelja, Pjaca "
+               "Joze Bodlovića 1, 21420 Bol — ista adresa kao u evidenciji; "
+               "istoimena župa u Povlji ima adresu Lokva 1"),
+    "702192": ("Rakalj", "Marčana",
+               "Porečka i pulska biskupija, popis župa: RAKALJ — župa "
+               "Rođenja BDM (pošta Krnica); točka je bila u Labinu"),
+    "702428": ("Majkusi", "Višnjan - Visignano",
+               "Porečka i pulska biskupija: SVETI IVAN OD ŠTERNE — župa sv. "
+               "Ivana Krstitelja, Majkusi 1, 52463 Višnjan"),
+    "700625": ("Slime", "Omiš",
+               "smn.hr/slime: župa i župna crkva sv. Ivana Krstitelja u "
+               "Slimenu (područje grada Omiša), spominju se 1625."),
+    "702420": ("Gornji Vaganac", "Plitvička Jezera",
+               "Gospićko-senjska biskupija: Uzvišenje sv. Križa — Vaganac, "
+               "uprava iz Drežnik Grada; u OSM-u je crkva Uzvišenja Svetog "
+               "Križa u Gornjem Vagancu. Vaganac kod Gospića je 60 km dalje"),
 }
 
 # Koliko sigurno smještenih župa treba da bi se županija pripisala biskupiji.
@@ -101,6 +124,14 @@ OVERRIDES: dict[str, tuple[str, str, str]] = {
 # a ispravan podatak se ne kvari. Cijena je da usamljena krivo smještena župa
 # može sama sebi napisati dozvolu — takva se hvata OVERRIDE-om, s izvorom.
 MIN_ZUPA_PO_ZUPANIJI = 1
+
+# Koliko daleko od SVAKOG naselja koje evidencija imenuje točka smije biti a da
+# je još uvijek smatramo dokazom. Nije prag pogreške nego prag besmisla:
+# izmjereno nad svih 1562 župe, iznad 30 km ostaje točno jedan slučaj koji nije
+# već pokriven OVERRIDES-om (Prgomelje → Dubrovnik, 314 km). Niže se ne smije:
+# na 20 km upada Žirje (upisano na „Šibenik", a otok je 22 km od grada) i još
+# nekoliko župa kojima sjedište legitimno nije u imenovanom naselju.
+MAX_SJEDISTE_KM = 30.0
 
 # Biskupije koje ne particioniraju teritorij — ne ulaze u izvod županija.
 _SKIP_DIOCESE = {"Križevačka Eparhija"}
@@ -321,8 +352,30 @@ class Fix(NamedTuple):
     reason: str
 
 
-def resolve(row, counties: dict[str, set[str]]) -> Fix | None:
-    """Vrati naselje u koje župa pripada, ako se trenutna točka s njim ne slaže."""
+class Drop(NamedTuple):
+    """Točka je besmislena, a odredište nije jednoznačno → bolje nikakva.
+
+    Prazna koordinata je poštena („ne znamo gdje je"); točka 314 km od svakog
+    naselja koje evidencija imenuje je tvrdnja koja nije istinita, a na karti
+    izgleda jednako uvjerljivo kao i sve ostale.
+    """
+    reason: str
+
+
+def _too_far_from_named(row) -> tuple[float, list[Settlement]] | None:
+    """(udaljenost, kandidati) ako je točka dalje od SVIH imenovanih naselja."""
+    exact, affix = candidates(row["city"])
+    cands = exact + affix
+    if not cands or row["lat"] is None:
+        return None
+    if any(contains(s, row["lat"], row["lng"]) for s in cands):
+        return None
+    d = min(km(row["lat"], row["lng"], s.lat, s.lng) for s in cands)
+    return (d, exact or affix) if d > MAX_SJEDISTE_KM else None
+
+
+def resolve(row, counties: dict[str, set[str]]) -> Fix | Drop | None:
+    """Što učiniti sa sjedištem župe: premjestiti, obrisati, ili ništa."""
     rid = str(row["registry_id"] or "")
     if rid in OVERRIDES:
         name, jls, src = OVERRIDES[rid]
@@ -337,6 +390,21 @@ def resolve(row, counties: dict[str, set[str]]) -> Fix | None:
 
     if row["lat"] is None:
         return None
+
+    # Prije izvoda županija: točka koja nije ni blizu nijednog naselja koje
+    # evidencija imenuje. Ne treba joj biskupija, pa hvata i Križevačku
+    # eparhiju — biskupiju koja se preklapa sa svima i zato uopće nije u
+    # izvodu (`_SKIP_DIOCESE`), a bez toga joj nitko ne provjerava sjedišta.
+    far = _too_far_from_named(row)
+    if far:
+        d, cands = far
+        where = ", ".join(f"{s.name}/{s.jls}" for s in cands)
+        if len(cands) == 1:
+            return Fix(cands[0], f"točka je bila {d:.0f} km od jedinog "
+                                 f"naselja tog imena ({where})")
+        return Drop(f"točka je bila {d:.0f} km od svakog naselja tog imena "
+                    f"({where}) — koje je pravo, evidencija ne kaže")
+
     allowed = counties.get(row["diocese"] or "", set())
     if not allowed:
         return None

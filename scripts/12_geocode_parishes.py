@@ -40,6 +40,7 @@ PENDING_SQL = (
     "SELECT id, name, address, city, county FROM parishes "
     "WHERE lat IS NULL AND (address IS NOT NULL OR city IS NOT NULL) "
     "AND (registry_status IS NULL OR registry_status LIKE 'AKTIV%') "
+    "AND duplicate_of IS NULL "
     "ORDER BY id"
 )
 

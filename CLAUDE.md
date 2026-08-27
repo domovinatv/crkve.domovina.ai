@@ -91,7 +91,7 @@ sloj ondje ima hook + toggle u `src/lib/MapState.tsx` + gumb u
 Deploy: `cd ../karta-hrvatske/apps/karta-web && npm run deploy`.
 
 **Župe:** crta pravne osobe (ne građevine), a **crveni prsten je župa bez
-spojene župne crkve** — 489 od 1563. To je jedini prikaz te rupe u podacima: u
+spojene župne crkve** — 487 od 1561. To je jedini prikaz te rupe u podacima: u
 sloju Crkve takva župa naprosto ne postoji. Prsten ide u dva sloja (bijela
 podloga pa crveni prsten) jer je ispod njega ispuna JLS-a proizvoljne boje —
 jednobojni prsten se u nekoj županiji/temi uvijek stopi s podlogom.
@@ -116,8 +116,8 @@ posjeduje) — dvije teritorijalne podjele s punom ispunom daju mulj.
   Za ponovni export poslije Placesa: `make derive export sync-karta stats`.
 - **„Župa bez crkve" su DVIJE različite brojke**, i nijedna nije `1563 −
   zupne_crkve`: 77 župnih crkava pripada pravnim osobama koje nisu `zupa`
-  (samostani, svetišta), pa ta razlika daje krivih 412. Točno je **489 župa
-  bez spojene župne crkve** i **424 bez ijedne spojene građevine**
+  (samostani, svetišta), pa ta razlika daje krivih 412. Točno je **487 župa
+  bez spojene župne crkve** i **421 bez ijedne spojene građevine**
   (`zupe_bez_zupne_crkve`, `zupe_bez_ijedne_crkve` u `scripts/40`).
 - **`church_count` se u exportu ZADRŽAVA i kad je 0**, za razliku od zastavica
   u `_DROP_IF_ZERO`: nula je nalaz („nema nijedne spojene građevine"), a ne
@@ -201,6 +201,21 @@ posjeduje) — dvije teritorijalne podjele s punom ispunom daju mulj.
 - **Izvod županija računa se nad ISPRAVLJENIM odredištima** (`_override_county`).
   Inače prvi run broji bujsku Krasicu u Istarsku, drugi ne — pa se dozvoljene
   županije mijenjaju između runova i korekcija kaskadno mijenja odluke.
+- **Koordinata koja nije ni blizu imenovanog naselja BRIŠE SE**, i kad se ne
+  zna prava (`parish_geo.Drop`, prag `MAX_SJEDISTE_KM = 30`). Prazna
+  koordinata je poštena; točka 314 km od svakog Prgomelja na karti izgleda
+  jednako uvjerljivo kao sve ostale. Prag je izmjeren: ispod 30 km upada
+  Žirje (upisano na „Šibenik", a otok je 22 km od grada). Ovo je i jedini
+  filtar koji uopće gleda **Križevačku eparhiju** — nju izvod županija
+  preskače (`_SKIP_DIOCESE`), pa joj inače nitko ne provjerava sjedišta.
+- **`duplicate_of` je NAŠA prosudba, ne podatak iz evidencije** — zato
+  zasebna kolona, a ne izmišljen `registry_status`: država za oba upisa
+  doista piše AKTIVAN. Signatura je stroga (isti kind+naziv+mjesto+adresa,
+  nijedan bez OIB-a) jer labavija tiho gubi 6 stvarnih zapisa. Pogađa točno
+  1 župu (ŽUPA SV. STJEPANA, Prgomet).
+- **„1563 katoličke župe" je broj ZAPISA, ne župa** — jedan je ugašen
+  (PRESTANAK, Prizna), jedan je duplikat (Prgomet). Aktivnih i različitih je
+  **1561** (`zupe_aktivne` u `scripts/40`).
 - **Točka naselja mora biti provjereno UNUTAR naselja.** Težište razvedenog
   („U") naselja pada van, a fallback na prvi vrh poligona leži NA granici gdje
   point-in-polygon vraća False: 84 od 6759 naselja tvrdilo je da ne sadrži
@@ -239,10 +254,7 @@ namjerno.
   matcher je gledao pa odbio. Prije mijenjanja pragova napravi dijagnozu faze
   u kojoj `best_match` odustaje: **`docs/2026-08-17-bastina-nespojeno.md`**.
 - **Župe bez crkve** — evidencija ima župu, OSM nema odgovarajuću građevinu.
-  489 bez župne crkve, 424 bez ijedne; na karti su crveni prsten u sloju Župe.
-- **Revizija lokacija župa nije dovršena** — detektor C još prijavljuje
-  Slivno, Dobranje, Soline; u evidenciji su i dvostruki upisi (sv. Ivana
-  Krstitelja Prizna, sv. Stjepana Prgomet) koji napuhuju `parish_count`.
+  487 bez župne crkve, 421 bez ijedne; na karti su crveni prsten u sloju Župe.
 - **Kontakti župa** (telefon/email/web) — nisu u državnoj evidenciji; išlo bi
   Firecrawlom po uzoru na `../klubovi.domovina.ai/scripts/04_backfill.py`.
 - **Zaseban frontend crkve.domovina.ai** — po uzoru na

@@ -15,8 +15,10 @@ def square(x: float, y: float, size: float = 1.0) -> list:
     return [[[x, y], [x + size, y], [x + size, y + size], [x, y + size], [x, y]]]
 
 
-def s(name: str, jls: str, county: str, x: float, y: float) -> pg.Settlement:
-    return pg.Settlement(name, jls, county, y + 0.5, x + 0.5, [square(x, y)])
+def s(name: str, jls: str, county: str, x: float, y: float,
+      size: float = 1.0) -> pg.Settlement:
+    return pg.Settlement(name, jls, county, y + size / 2, x + size / 2,
+                         [square(x, y, size)])
 
 
 @pytest.fixture
@@ -150,3 +152,39 @@ def test_reprezentativna_tocka_ne_pada_u_rupu():
     ]
     lat, lng = pg.representative_point([prsten])
     assert pg._point_in_poly(prsten, lat, lng)
+
+
+def test_daleko_od_svih_kandidata_brise_koordinatu(fake_index):
+    """Grkokatolička župa u Prgomelju sjela je u Dubrovnik, 314 km od oba
+    Prgomelja. Odredište se ne zna (dva su), ali točka sigurno nije dokaz —
+    a Križevačku eparhiju izvod županija ne pokriva, pa je ovo jedini filtar
+    koji je uopće pogleda."""
+    fake_index([
+        s("Prgomelje", "Pakrac", "Požeško-slavonska", 17, 45),
+        s("Prgomelje", "Bjelovar", "Bjelovarsko-bilogorska", 16, 45),
+    ])
+    row = Row(registry_id="701807", diocese="Križevačka Eparhija",
+              city="Prgomelje", lat=42.65, lng=18.09)
+    out = pg.resolve(row, {})
+    assert isinstance(out, pg.Drop)
+    assert "314" in out.reason or "km" in out.reason
+
+
+def test_daleko_od_jedinog_kandidata_premjesta(fake_index):
+    fake_index([s("Prgomelje", "Bjelovar", "Bjelovarsko-bilogorska", 16, 45)])
+    row = Row(registry_id="nema-override", diocese="D", city="Prgomelje",
+              lat=42.65, lng=18.09)
+    out = pg.resolve(row, {})
+    assert isinstance(out, pg.Fix) and out.target.jls == "Bjelovar"
+
+
+def test_sjediste_izvan_imenovanog_naselja_ali_blizu_se_ne_dira(monkeypatch, fake_index):
+    """Žirje je u evidenciji upisano na „Šibenik" i leži 22 km od grada.
+    Prag mora ostati iznad toga — inače korekcija otok vuče na kopno."""
+    fake_index([s("Šibenik", "Šibenik", "Šibensko-kninska", 15.85, 43.7, size=0.1)])
+    monkeypatch.setattr(pg.geo_hr, "locate",
+                        lambda la, ln: pg.geo_hr.Place(None, None, "Šibensko-kninska"))
+    row = Row(registry_id="701996", diocese="Šibenska Biskupija", city="Šibenik",
+              lat=43.66, lng=15.66)
+    assert pg.km(43.66, 15.66, 43.75, 15.90) < pg.MAX_SJEDISTE_KM
+    assert pg.resolve(row, {"Šibenska Biskupija": {"Šibensko-kninska"}}) is None

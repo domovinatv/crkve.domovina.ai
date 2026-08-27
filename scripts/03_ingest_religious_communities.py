@@ -32,7 +32,7 @@ from src.datagovhr import (  # noqa: E402
     fetch,
     split_sjediste,
 )
-from src.db import connect, merge_source, upsert_diocese, upsert_parish  # noqa: E402
+from src.db import connect, mark_duplicates, merge_source, upsert_diocese, upsert_parish  # noqa: E402
 from src.normalize import slugify, title_case_hr  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -167,9 +167,11 @@ def run() -> None:
             stats["ok"] += 1
 
         # Broj org. oblika po zajednici (za `dioceses.parish_count`).
+        mark_duplicates(conn)
         for row in conn.execute(
             "SELECT diocese, COUNT(*) n FROM parishes WHERE community IS NOT NULL "
-            "GROUP BY diocese"
+            "AND (registry_status IS NULL OR registry_status LIKE 'AKTIV%') "
+            "AND duplicate_of IS NULL GROUP BY diocese"
         ).fetchall():
             conn.execute(
                 "UPDATE dioceses SET parish_count = ? WHERE name = ?",

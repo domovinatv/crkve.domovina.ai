@@ -48,6 +48,7 @@ EXPORTS = {
                p.address AS adresa, p.city AS mjesto, p.county AS zupanija,
                p.lat, p.lng, p.geocode_source AS izvor_koordinata,
                p.registry_no AS evidencijski_broj, p.registry_status AS status,
+               p.duplicate_of AS duplikat_od,
                p.registered_at AS datum_upisa, p.leader_title AS sluzba,
                p.phone AS telefon, p.email, p.website AS web,
                p.google_maps_uri AS google_karta,

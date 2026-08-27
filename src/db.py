@@ -142,6 +142,10 @@ CREATE TABLE IF NOT EXISTS parishes (
 
   source          TEXT,
   notes           TEXT,
+  -- NAŠA prosudba, ne podatak iz evidencije: `registry_id` zapisa koji je isti
+  -- pravni subjekt upisan dvaput. Zato zasebna kolona, a ne izmišljen
+  -- `registry_status` — evidencija za oba doista piše AKTIVAN.
+  duplicate_of    INTEGER,
   created_at      TEXT DEFAULT CURRENT_TIMESTAMP,
   updated_at      TEXT DEFAULT CURRENT_TIMESTAMP
 );
@@ -240,10 +244,57 @@ def connect(db_path: Path = DB_PATH) -> sqlite3.Connection:
     return conn
 
 
+# Kolone dodane nakon prvog izdanja sheme. `CREATE TABLE IF NOT EXISTS` ne
+# dira postojeću tablicu, pa bi bez ovoga postojeća baza ostala bez njih.
+_ADDED_COLUMNS = [("parishes", "duplicate_of", "INTEGER")]
+
+
+def _migrate(conn: sqlite3.Connection) -> None:
+    for table, column, decl in _ADDED_COLUMNS:
+        have = {r["name"] for r in conn.execute(f"PRAGMA table_info({table})")}
+        if column not in have:
+            conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {decl}")
+
+
 def init_db(db_path: Path = DB_PATH) -> None:
     with connect(db_path) as conn:
         conn.executescript(SCHEMA)
+        _migrate(conn)
         conn.commit()
+
+
+# Signatura je namjerno stroga: ISTI tip, naziv, mjesto I adresa, i nijedan od
+# zapisa nema OIB. Labavije se ne smije — dvije zagrebačke „ŽUPA SV. MARKA
+# EVANĐELISTE" su dvije stvarne pravne osobe, a spajanje po nazivu i mjestu
+# tiho gubi 6 zapisa (vidi CLAUDE.md). Zadržava se najranije upisan.
+_DUPLICATE_SQL = """
+SELECT kind, name, city, address, COUNT(*) n
+FROM parishes
+WHERE oib IS NULL
+  AND (registry_status IS NULL OR registry_status LIKE 'AKTIV%')
+GROUP BY kind, name, city, address
+HAVING n > 1
+"""
+
+
+def mark_duplicates(conn: sqlite3.Connection) -> int:
+    """Označi višestruke upise istog subjekta. Vraća broj označenih."""
+    marked = 0
+    conn.execute("UPDATE parishes SET duplicate_of = NULL WHERE duplicate_of IS NOT NULL")
+    for g in conn.execute(_DUPLICATE_SQL).fetchall():
+        rows = conn.execute(
+            "SELECT id, registry_id FROM parishes WHERE oib IS NULL "
+            "AND (registry_status IS NULL OR registry_status LIKE 'AKTIV%') "
+            "AND kind IS ? AND name IS ? AND city IS ? AND address IS ? "
+            "ORDER BY registered_at, registry_no, id",
+            (g["kind"], g["name"], g["city"], g["address"]),
+        ).fetchall()
+        keep = rows[0]
+        for dup in rows[1:]:
+            conn.execute("UPDATE parishes SET duplicate_of = ? WHERE id = ?",
+                         (keep["registry_id"], dup["id"]))
+            marked += 1
+    return marked
 
 
 def _upsert(conn: sqlite3.Connection, table: str, key: str, key_val, fields: dict) -> int:

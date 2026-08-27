@@ -260,8 +260,9 @@ make help        # popis koraka
 13_places_parishes        Google Places (OPCIONALNO, treba ključ):
                           preciziranje župa + nezavisna provjera matchera
         ▼
-14_fix_parish_locations   župe sjele na krivi homonim naselja   11
+14_fix_parish_locations   župe sjele na krivi homonim naselja   17
                           (biskupija reže kandidate; ostalo override)
+                          + 1 koordinata odbačena kao besmislena
                           → pa 11_match_parishes ponovo
         ▼
 20_derive_diocese_areas   teritoriji 15 biskupija iz sjedišta župa
@@ -353,7 +354,7 @@ katedrale/bazilike/svetišta vidljivi od zoom 7. Popup nosi titular, župu,
 biskupiju, zaštitu, godinu, sliku i linkove (web, Wikipedija, OSM).
 
 **🏛 Župe** — 2 928 vjerskih pravnih osoba. **Crveni prsten je župa bez spojene
-župne crkve** (489 od 1 563) — te župe u sloju Crkve ne postoje jer za njih
+župne crkve** (487 od 1 561) — te župe u sloju Crkve ne postoje jer za njih
 građevine u katalogu nema, pa je ovo jedini prikaz te rupe na karti.
 
 **✝️ Biskupije** — teritoriji 15 latinskih (nad)biskupija, derivirani (vidi
@@ -401,8 +402,9 @@ korekcija smije pustiti blizu podataka:
 
 - **923 zaštićena objekta** nemaju para u OSM-u — dio su ruševine, dio posao
   za bolji matcher.
-- **489 župa** (od 1 563) nema spojenu župnu crkvu, a **424** nemaju spojenu
-  nijednu građevinu. Na karti su to župe s crvenim prstenom u sloju „🏛 Župe".
+- **487 župa** (od 1 561 aktivne i različite; evidencija ima 1 563 zapisa, od
+  toga jedan ugašen i jedan dvostruk) nema spojenu župnu crkvu, a **421**
+  nemaju spojenu nijednu građevinu. Na karti su to župe s crvenim prstenom u sloju „🏛 Župe".
 - **Kontakti župa** (telefon, email, web) — nisu u državnoj evidenciji.
   Telefon i web dolaze uz `make places`; email bi išao Firecrawlom po uzoru na
   `../klubovi.domovina.ai/scripts/04_backfill.py`.

@@ -28,6 +28,8 @@ def run() -> None:
     with connect() as conn:
         q = lambda sql, *a: conn.execute(sql, a).fetchone()[0]  # noqa: E731
 
+        _AKTIV = ("(p.registry_status IS NULL OR p.registry_status LIKE 'AKTIV%') "
+                  "AND p.duplicate_of IS NULL")
         stats = {
             "crkve_ukupno": q("SELECT COUNT(*) FROM churches"),
             "crkve_s_koordinatama": q("SELECT COUNT(*) FROM churches WHERE lat IS NOT NULL"),
@@ -43,6 +45,11 @@ def run() -> None:
             "geo_konflikti": q("SELECT COUNT(*) FROM geo_conflicts"),
             "pravne_osobe_ukupno": q("SELECT COUNT(*) FROM parishes"),
             "zupe_katolicke": q("SELECT COUNT(*) FROM parishes WHERE kind = 'zupa'"),
+            # 1563 je koliko ZAPISA evidencija ima; jedan je ugašen
+            # (PRESTANAK), jedan je isti subjekt upisan dvaput (Prgomet).
+            "zupe_aktivne": q(
+                "SELECT COUNT(*) FROM parishes p WHERE p.kind = 'zupa' AND " + _AKTIV
+            ),
             "zupe_s_koordinatama": q("SELECT COUNT(*) FROM parishes WHERE lat IS NOT NULL"),
             "zupe_s_oib": q("SELECT COUNT(*) FROM parishes WHERE oib IS NOT NULL"),
             "zupe_s_telefonom": q("SELECT COUNT(*) FROM parishes WHERE phone IS NOT NULL"),
@@ -52,11 +59,13 @@ def run() -> None:
             # jer 77 župnih crkava pripada pravnim osobama koje nisu `zupa`
             # (samostani, svetišta).
             "zupe_bez_zupne_crkve": q(
-                "SELECT COUNT(*) FROM parishes p WHERE p.kind = 'zupa' AND NOT EXISTS("
+                "SELECT COUNT(*) FROM parishes p WHERE p.kind = 'zupa' AND " + _AKTIV +
+                " AND NOT EXISTS("
                 " SELECT 1 FROM churches c WHERE c.parish_id = p.id AND c.is_parish_church = 1)"
             ),
             "zupe_bez_ijedne_crkve": q(
-                "SELECT COUNT(*) FROM parishes p WHERE p.kind = 'zupa' AND NOT EXISTS("
+                "SELECT COUNT(*) FROM parishes p WHERE p.kind = 'zupa' AND " + _AKTIV +
+                " AND NOT EXISTS("
                 " SELECT 1 FROM churches c WHERE c.parish_id = p.id)"
             ),
             "biskupije_i_zajednice": q("SELECT COUNT(*) FROM dioceses"),
@@ -121,7 +130,8 @@ def run() -> None:
     print(f"  … od toga župnih crkava     {stats['zupne_crkve']:>7}")
     print("─" * 62)
     print(f"  Pravnih osoba (župe i sl.)  {stats['pravne_osobe_ukupno']:>7}")
-    print(f"  … katoličkih župa           {stats['zupe_katolicke']:>7}")
+    print(f"  … katoličkih župa           {stats['zupe_katolicke']:>7}"
+          f"  (aktivnih i različitih: {stats['zupe_aktivne']})")
     print(f"  … s koordinatama            {stats['zupe_s_koordinatama']:>7}  {pct(stats['zupe_s_koordinatama'], stats['pravne_osobe_ukupno'])}")
     print(f"  … s telefonom / webom       {stats['zupe_s_telefonom']:>7} / {stats['zupe_s_webom']}")
     print(f"  … župa bez župne crkve      {stats['zupe_bez_zupne_crkve']:>7}"
