@@ -397,6 +397,8 @@ Zašto su granice biskupija izračunate i kako su izmjerene:
 Kako je homonim naselja obojao Rab u zadarsko i što je sve trebalo da se
 korekcija smije pustiti blizu podataka:
 [`docs/2026-08-17-revizija-lokacija-zupa.md`](docs/2026-08-17-revizija-lokacija-zupa.md).
+Zašto vlastiti frontend još ne postoji i što mu točno nedostaje:
+[`docs/2026-08-27-frontend-plan.md`](docs/2026-08-27-frontend-plan.md).
 
 ## Što još fali
 

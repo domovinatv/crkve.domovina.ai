@@ -258,4 +258,8 @@ namjerno.
 - **Kontakti župa** (telefon/email/web) — nisu u državnoj evidenciji; išlo bi
   Firecrawlom po uzoru na `../klubovi.domovina.ai/scripts/04_backfill.py`.
 - **Zaseban frontend crkve.domovina.ai** — po uzoru na
-  `../klubovi.domovina.ai/frontend` (React PWA, Cloudflare Pages). Nije rađen.
+  `../klubovi.domovina.ai/frontend` (React PWA, Cloudflare Pages). **Nije
+  rađen, i domena ne postoji ni u DNS-u.** Provjereno stanje, popis posla,
+  CF račun i zamke iz `_worker.js` uzorka:
+  **`docs/2026-08-27-frontend-plan.md`**. Neriješeno: nosi li detaljna
+  stranica građevinu, pravnu osobu ili oboje — dvije tablice nisu isti skup.
