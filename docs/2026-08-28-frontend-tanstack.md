@@ -168,3 +168,14 @@ se pokazale tek u praksi:
 
 - Fotografije: samo 712 od 6966 građevina ima sliku s Commonsa.
 - Kontakti župa — i dalje nema izvora.
+
+## Vezani dokumenti
+
+- `2026-08-27-frontend-plan.md` — stanje prije ovoga i dijagram dvaju deploy
+  lanaca (sam plan je zastario, vidi zaglavlje ondje)
+- `2026-08-16-sloj-zupe.md` — odakle brojka „župa bez crkve" koju frontend
+  ispisuje kao rupu
+- `2026-08-16-biskupije.md` — kako nastaje derivirani teritorij i njegova mjera
+  slaganja, koju stranica biskupije prikazuje uz granicu
+- `2026-08-17-revizija-lokacija-zupa.md` — ispravnost koordinata župa, bez koje
+  bi 1561 detaljna stranica objavila krivu lokaciju

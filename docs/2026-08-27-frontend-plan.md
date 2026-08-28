@@ -111,3 +111,5 @@ kodu, i nije donesena.
 - `docs/2026-08-16-sloj-zupe.md` — sloj župa i brojka „župa bez crkve"
 - `docs/2026-08-17-revizija-lokacija-zupa.md` — ispravnost koordinata župa,
   bez koje bi per-župa stranice objavile krive lokacije
+- `docs/2026-08-28-frontend-tanstack.md` — što je umjesto ovog plana stvarno
+  napravljeno, i zašto
