@@ -178,6 +178,24 @@ workera. Worker se nikad ne javi, dispatcher čeka zauvijek, `map.on("load")` ne
 okine i naši slojevi (`crkve-tocke`, `crkve-clusters`, `crkve-cluster-count`)
 se ne dodaju. Ništa od toga ne baca grešku.
 
+Lanac je bitan jer objašnjava zašto nema greške: svaki korak samo **čeka**
+prethodni, a čekanje nije iznimka.
+
+```mermaid
+flowchart TD
+    S["stil, sprite, glyphovi<br/>200 · glavna dretva"] --> OK([kontrole se iscrtaju])
+    S --> D[dispatcher]
+    D -->|"new Worker(/assets/maplibre-gl-worker.mjs)"| W{{"404 · datoteke nema"}}
+    W -.->|"nikad ne odgovori"| D
+    D --> T["0 zahtjeva za .pbf"]
+    T --> L["isStyleLoaded() false<br/>map.on('load') ne okine"]
+    L --> Y["crkve-tocke, crkve-clusters,<br/>crkve-cluster-count se ne dodaju"]
+    Y --> E([prazan sivi okvir · 0 grešaka])
+
+    style W fill:#fff,stroke:#b4442a
+    style E fill:#fff,stroke:#b4442a
+```
+
 `bun run dev` to ne može uhvatiti: ondje Vite servira
 `node_modules/maplibre-gl/dist/`, gdje worker stvarno stoji uz svoj chunk.
 **Kvar postoji samo u buildu** — kao i zamka s asetima iz prethodnog poglavlja,
