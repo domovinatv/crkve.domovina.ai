@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import type { ChurchIndexItem, ParishIndexItem, Diocese } from "@/lib/catalog";
+import { loadChurchIndex, loadDioceseIndex, loadParishIndex } from "@/lib/data";
 
 /**
  * Sitemap se GENERIRA iz indeksa, ne održava ručno. Katalog ima ~9400
@@ -24,16 +24,12 @@ export const Route = createFileRoute("/sitemap.xml")({
       GET: async ({ request }) => {
         const origin = new URL(request.url).origin;
 
-        const get = async <T,>(path: string): Promise<T> => {
-          const res = await fetch(`${origin}${path}`);
-          if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`);
-          return (await res.json()) as T;
-        };
-
+        // Isti loaderi kao rute — dijele ispravak s ASSETS bindingom.
+        // Vlastiti `fetch(origin + path)` ovdje bi na Workeru vratio 404.
         const [churches, parishes, dioceses] = await Promise.all([
-          get<{ items: ChurchIndexItem[] }>("/data/crkve-index.json"),
-          get<{ items: ParishIndexItem[] }>("/data/zupe-index.json"),
-          get<{ items: Diocese[] }>("/data/biskupije.json"),
+          loadChurchIndex(),
+          loadParishIndex(),
+          loadDioceseIndex(),
         ]);
 
         const urls: { loc: string; priority: string }[] = [

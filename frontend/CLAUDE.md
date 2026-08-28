@@ -5,6 +5,7 @@ Web kataloga crkava. Nastao iz `stepanic/hr-site-starter` templatea, ali
 iz baze. Pipeline i model podataka: `../CLAUDE.md`.
 
 ## Stack
+
 TanStack Start + Nitro (`preset: cloudflare-module`) → Cloudflare **Worker**.
 shadcn/ui + Tailwind v4, React 19, bun. Bez baze, bez auth-a, bez secreta.
 
@@ -22,15 +23,15 @@ bun run build        # → .output/
 korijena repoa). **Gitignoran je** — 9400 datoteka. U čistom checkoutu ga
 nema, pa `bun run dev` prije prvog `make export-web` daje prazne stranice.
 
-| Datoteka | Što |
-|---|---|
-| `crkve-index.json` | 6966 slim zapisa — karta i pretraga |
-| `zupe-index.json` | pravne osobe koje imaju stranicu |
-| `crkva/<slug>.json` | detalj građevine |
-| `zupa/<slug>.json`, `ustanova/<slug>.json` | detalj pravne osobe |
-| `biskupija/<slug>.json`, `biskupije.json`, `biskupije.geojson` | biskupije |
-| `stats.json` | mjera iz `scripts/40` — **brojke se NE računaju ovdje** |
-| `manifest.json` | `generated_at` i brojke |
+| Datoteka                                                       | Što                                                     |
+| -------------------------------------------------------------- | ------------------------------------------------------- |
+| `crkve-index.json`                                             | 6966 slim zapisa — karta i pretraga                     |
+| `zupe-index.json`                                              | pravne osobe koje imaju stranicu                        |
+| `crkva/<slug>.json`                                            | detalj građevine                                        |
+| `zupa/<slug>.json`, `ustanova/<slug>.json`                     | detalj pravne osobe                                     |
+| `biskupija/<slug>.json`, `biskupije.json`, `biskupije.geojson` | biskupije                                               |
+| `stats.json`                                                   | mjera iz `scripts/40` — **brojke se NE računaju ovdje** |
+| `manifest.json`                                                | `generated_at` i brojke                                 |
 
 Tipovi su u `src/lib/catalog.ts` i moraju pratiti export. Loaderi su u
 `src/lib/data.ts`.
@@ -38,6 +39,7 @@ Tipovi su u `src/lib/catalog.ts` i moraju pratiti export. Loaderi su u
 ## Tvrda pravila
 
 ### Dvije jedinice stranice, i to je namjerno
+
 `/crkva/$slug` je **građevina**, `/zupa/$slug` i `/ustanova/$slug` su
 **pravna osoba**. To nisu isti skup (6966 : 2358, veza N:1) — jedna župa ima
 župnu crkvu i filijale, a samostanska ili grobljanska crkva nema župu. Ne
@@ -46,6 +48,7 @@ spajaj ih u jednu stranicu.
 `/ustanova/` postoji da URL ne laže: samostan i crkvena općina nisu župe.
 
 ### Brojke se ne računaju u komponenti
+
 Sve brojke dolaze iz `stats.json` ili `manifest.json`. Ako negdje treba nova
 brojka, doda se u `scripts/40_stats.py`, ne u JSX. Dvije brojke koje se same
 računaju uvijek se raziđu — u ovom repou se to već dogodilo (vidi „župa bez
@@ -54,17 +57,20 @@ crkve" u `../CLAUDE.md`).
 Ne hardkodiraj brojke u tekst. Zastare pri prvom rebuildu podataka.
 
 ### Rupa u podacima se ISPISUJE
+
 Nula nije „nema podatka" nego nalaz. Župa bez spojene građevine dobiva
 `<Gap>` s objašnjenjem, ne praznu sekciju. Ako sakriješ rupu, potrošač je ne
 može ni primijetiti ni prijaviti.
 
 ### Veliki indeks NE ide u loader rute
+
 TanStack serijalizira loader podatke u HTML. `crkve-index.json` je 1,5 MB —
 u loaderu bi ga posjetitelj dobio dvaput. Indeks se dohvaća **na klijentu**
 (`CatalogMap`, `ChurchBrowser`, `ParishBrowser`); loaderi smiju samo male
 datoteke (detalj, stats, manifest, biskupije).
 
 ### MapLibre zamke
+
 - **`case` traži boolean.** `["case", ["get", "heritage"], …]` s brojem 0/1
   baca „Expected boolean but found number" i **obori cijeli sloj bez greške
   vidljive na karti**. Zato `toFeatureCollection` piše prave booleane.
@@ -81,6 +87,7 @@ datoteke (detalj, stats, manifest, biskupije).
   obrazac kao `window._gisMap` u `../../karta-hrvatske`).
 
 ### Boje idu kroz tokene
+
 Sve u `src/styles.css`, u oklch. Iznimka su **boje karte** (`--map-*`), koje
 su namjerno u hexu: MapLibre ima vlastiti parser boja i ne jamči CSS Color 4.
 Komponenta ih čita `getComputedStyle`-om, ne hardkodira.
@@ -89,10 +96,12 @@ Akcenti nose značenje: `--accent-1` zaštićeno kulturno dobro, `--accent-2`
 rupa u podacima, `--accent-3` potvrđena lokacija.
 
 ### Ovo je TanStack Router, ne Next.js
+
 Konvencije: `src/routes/README.md`. Nikad `src/pages/`, `app/layout.tsx`,
 `"use client"`, `next/link`. `src/routeTree.gen.ts` je generiran.
 
 ### SEO
+
 Svaka ruta ima `head: () => ({ ...pageHead({...}), scripts: [breadcrumbLd(...)] })`.
 Točno jedan `<h1>`. Structured data: `Dataset` je globalan u `__root.tsx`
 (ne `LocalBusiness` — ovo nije poslovni subjekt), `PlaceOfWorship` na
@@ -103,11 +112,14 @@ URL-ova). Ručan je samo popis statičnih ruta na vrhu te datoteke — ako dodaj
 rutu, dodaj je ondje.
 
 ## Ton hrvatskog teksta
+
 Stručan, suh, bez marketinga. Dijakritika obavezna. Ne tvrdi preciznost koju
 podatak nema: derivirani teritorij uvijek ide uz svoju mjeru slaganja.
 
 ## Prije nego kažeš da si gotov
+
 ```sh
 bun run typecheck && bun run lint && bun run build
 ```
+
 Sva tri moraju proći; errora mora biti 0.

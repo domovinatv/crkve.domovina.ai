@@ -36,7 +36,30 @@ echo "▶ build"
 bun run build
 
 echo "▶ deploy"
-wrangler deploy
+wrangler deploy | tee "$FRONTEND_DIR/.deploy.log"
+DEPLOY_URL=$(grep -oE 'https://[a-z0-9.-]+workers\.dev' "$FRONTEND_DIR/.deploy.log" | head -1)
+rm -f "$FRONTEND_DIR/.deploy.log"
+
+# Provjera POSLIJE deploya, jer se jedna klasa kvarova vidi SAMO na Workeru:
+# SSR loader koji fetcha vlastiti origin lokalno radi (dev server poslužuje
+# assete), a na Cloudflareu se vrati u sam worker i vrati 404 — pa svaka
+# stranica s loaderom postane 404 dok su one bez njega uredne. Dogodilo se.
+if [[ -n "$DEPLOY_URL" ]]; then
+  echo "▶ provjera na $DEPLOY_URL"
+  FAILED=0
+  for path in / /crkve /zupe /biskupije /brojke /karta /o-projektu; do
+    code=$(curl -s -o /dev/null -w '%{http_code}' "$DEPLOY_URL$path")
+    printf "  %-3s %s\n" "$code" "$path"
+    [[ "$code" == "200" ]] || FAILED=1
+  done
+  urls=$(curl -s "$DEPLOY_URL/sitemap.xml" | grep -c "<url>" || true)
+  echo "  sitemap: $urls URL-ova"
+  [[ "$urls" -gt 9000 ]] || FAILED=1
+  if [[ "$FAILED" -ne 0 ]]; then
+    echo "✗ deploy je prošao, ali provjera nije. Ne kači domenu dok se ovo ne riješi." >&2
+    exit 1
+  fi
+fi
 
 echo "✓ gotovo. Domena crkve.domovina.ai kači se ručno:"
 echo "  Cloudflare dashboard → Workers & Pages → crkve-domovina → Settings → Domains & Routes"

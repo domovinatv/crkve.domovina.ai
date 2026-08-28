@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { Search } from "lucide-react";
 
 import type { ParishIndexItem } from "@/lib/catalog";
-import { PARISH_KIND_LABEL, foldHr, num } from "@/lib/format";
+import { PARISH_KIND_LABEL, broj, foldHr, num } from "@/lib/format";
 import { Chip } from "@/components/catalog/Bits";
 
 const PAGE = 60;
@@ -105,7 +105,7 @@ export function ParishBrowser({ initialDiocese }: { initialDiocese?: string | un
       <p className="text-sm text-muted-foreground" aria-live="polite">
         {items ? (
           <>
-            {num(results.length)} {results.length === 1 ? "pravna osoba" : "pravnih osoba"}
+            {broj(results.length, "pravna osoba", "pravne osobe", "pravnih osoba")}
             {results.length !== items.length && <> od ukupno {num(items.length)}</>}
           </>
         ) : (
@@ -129,9 +129,7 @@ export function ParishBrowser({ initialDiocese }: { initialDiocese?: string | un
               </p>
               <div className="mt-2.5 flex flex-wrap gap-1.5">
                 {p.church_count > 0 ? (
-                  <Chip>
-                    {num(p.church_count)} {p.church_count === 1 ? "građevina" : "građevina"}
-                  </Chip>
+                  <Chip>{broj(p.church_count, "građevina", "građevine", "građevina")}</Chip>
                 ) : (
                   <Chip tone="gap">Nema spojene građevine</Chip>
                 )}

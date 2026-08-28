@@ -15,20 +15,34 @@ import type {
 
 /**
  * Podaci su statičke datoteke u `public/data/`, koje piše
- * `scripts/34_export_static.py`. Nema baze ni bindinga — Worker ih poslužuje
- * kao assete, a loader ih dohvaća fetchom.
+ * `scripts/34_export_static.py`. Nema baze ni bindinga u konfiguraciji —
+ * Worker ih poslužuje kao assete.
  *
- * ZAMKA: na Cloudflare Workeru `fetch("/data/x.json")` baca (relativan URL
- * nema bazu). U pregledniku pak apsolutni URL vodi na produkcijski origin i
- * u devu bi dohvaćao živu stranicu umjesto lokalne. Otud isomorphic origin:
- * prazan string na klijentu, origin zahtjeva na serveru.
+ * ZAMKA KOJA JE KOŠTALA JEDNOG DEPLOYA: na Cloudflareu `fetch` na vlastiti
+ * origin NE dolazi do sloja s assetima nego se vrati u sam Worker, koji za
+ * `/data/*` nema rutu — pa loader dobije 404 i svaka stranica s loaderom
+ * postane 404. Vidjelo se tek u produkciji: lokalno (vite dev) isti kod radi
+ * jer ondje asete poslužuje dev server.
+ *
+ * Ispravan put je `env.ASSETS.fetch()`. Nitroov cloudflare preset zakači
+ * `{ env, context }` na `request.runtime.cloudflare`, pa se do bindinga dolazi
+ * kroz zahtjev. Ako bindinga nema (vite dev), pada se na obični fetch.
  */
-const dataOrigin = createIsomorphicFn()
-  .client(() => "")
-  .server(() => new URL(getRequest().url).origin);
+type CloudflareRequest = Request & {
+  runtime?: { cloudflare?: { env?: { ASSETS?: { fetch: (req: Request) => Promise<Response> } } } };
+};
+
+const fetchData = createIsomorphicFn()
+  .client((path: string) => fetch(path))
+  .server((path: string) => {
+    const req = getRequest() as CloudflareRequest;
+    const url = new URL(path, req.url);
+    const assets = req.runtime?.cloudflare?.env?.ASSETS;
+    return assets ? assets.fetch(new Request(url)) : fetch(url);
+  });
 
 async function loadJson<T>(path: string): Promise<T> {
-  const res = await fetch(`${dataOrigin()}${path}`);
+  const res = await fetchData(path);
   if (res.status === 404) throw notFound();
   if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`);
   return (await res.json()) as T;

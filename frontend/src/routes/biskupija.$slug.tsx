@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { loadDiocese } from "@/lib/data";
 import { breadcrumbLd, pageHead } from "@/lib/seo";
-import { km2, num, pct } from "@/lib/format";
+import { broj, km2, num, pct } from "@/lib/format";
 import { Chip, Crumbs, Gap, Row, Section } from "@/components/catalog/Bits";
 
 export const Route = createFileRoute("/biskupija/$slug")({
@@ -50,7 +50,9 @@ function BiskupijaPage() {
 
       <div className="mt-4 flex flex-wrap gap-2">
         {d.kind && <Chip tone="primary">{d.kind}</Chip>}
-        <Chip>{num(parishes.length)} pravnih osoba u katalogu</Chip>
+        <Chip>
+          {broj(parishes.length, "pravna osoba", "pravne osobe", "pravnih osoba")} u katalogu
+        </Chip>
         {gaps > 0 && <Chip tone="gap">{num(gaps)} bez župne crkve</Chip>}
       </div>
 
@@ -124,7 +126,9 @@ function BiskupijaPage() {
                   >
                     <span className="font-semibold">{p.short_name ?? p.name}</span>
                     <span className="mt-0.5 block text-xs text-muted-foreground">
-                      {[p.city, `${num(p.church_count)} građevina`].filter(Boolean).join(" · ")}
+                      {[p.city, broj(p.church_count, "građevina", "građevine", "građevina")]
+                        .filter(Boolean)
+                        .join(" · ")}
                     </span>
                     {p.has_parish_church === 0 && (
                       <span className="mt-2 block">

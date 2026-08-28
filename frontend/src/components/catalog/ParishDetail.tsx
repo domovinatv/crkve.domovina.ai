@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 
 import type { Parish } from "@/lib/catalog";
-import { KIND_LABEL, PARISH_KIND_LABEL, datum, denominationLabel, num } from "@/lib/format";
+import { KIND_LABEL, PARISH_KIND_LABEL, broj, datum, denominationLabel, num } from "@/lib/format";
 import { Chip, Crumbs, Gap, Row, Section } from "@/components/catalog/Bits";
 import { MiniMap } from "@/components/catalog/MiniMap";
 
@@ -38,9 +38,7 @@ export function ParishDetail({ p }: { p: Parish }) {
             {p.church_count === 0 ? (
               <Chip tone="gap">Nema spojene građevine</Chip>
             ) : (
-              <Chip>
-                {num(p.church_count)} {p.church_count === 1 ? "građevina" : "građevina"}
-              </Chip>
+              <Chip>{broj(p.church_count, "građevina", "građevine", "građevina")}</Chip>
             )}
             {p.church_count > 0 && p.has_parish_church === 0 && (
               <Chip tone="gap">Bez župne crkve</Chip>
@@ -60,9 +58,8 @@ export function ParishDetail({ p }: { p: Parish }) {
           {p.church_count > 0 && p.has_parish_church === 0 && (
             <div className="mt-6 max-w-2xl">
               <Gap>
-                Katalog zna za {num(p.church_count)}{" "}
-                {p.church_count === 1 ? "građevinu" : "građevine"} ove pravne osobe, ali nijedna
-                nije prepoznata kao njezina župna crkva.
+                Katalog zna za {broj(p.church_count, "građevinu", "građevine", "građevina")} ove
+                pravne osobe, ali nijedna nije prepoznata kao njezina župna crkva.
               </Gap>
             </div>
           )}
@@ -193,7 +190,7 @@ export function parishDescription(p: Parish): string {
     p.city ?? "",
     p.diocese ?? p.community ?? "",
     p.church_count > 0
-      ? `${p.church_count} spojenih građevina`
+      ? `${broj(p.church_count, "spojena građevina", "spojene građevine", "spojenih građevina")}`
       : "bez spojene građevine u katalogu",
   ].filter(Boolean);
   return `${p.short_name ?? p.name} — ${bits.join(", ")}. OIB, sjedište i popis crkava u katalogu crkve.domovina.ai.`;

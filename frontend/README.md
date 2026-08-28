@@ -19,19 +19,19 @@ Ako baza već postoji, dovoljno je `make stats export-web`.
 
 ## Rute
 
-| URL | Što |
-|---|---|
-| `/` | naslovnica s brojkama |
-| `/karta` | MapLibre karta svih objekata, filtri po vrsti |
-| `/crkve` | pretraga i popis građevina |
-| `/crkva/$slug` | detalj građevine (6966 stranica) |
-| `/zupe` | pretraga i popis pravnih osoba |
-| `/zupa/$slug` | detalj katoličke župe (1561) |
-| `/ustanova/$slug` | detalj ostalih mjesnih pravnih osoba (797) |
-| `/biskupije`, `/biskupija/$slug` | biskupije i derivirani teritoriji |
-| `/brojke` | pokrivenost i rupe |
-| `/o-projektu` | izvori, postupak, licenca |
-| `/sitemap.xml` | generiran iz indeksa, ~9400 URL-ova |
+| URL                              | Što                                           |
+| -------------------------------- | --------------------------------------------- |
+| `/`                              | naslovnica s brojkama                         |
+| `/karta`                         | MapLibre karta svih objekata, filtri po vrsti |
+| `/crkve`                         | pretraga i popis građevina                    |
+| `/crkva/$slug`                   | detalj građevine (6966 stranica)              |
+| `/zupe`                          | pretraga i popis pravnih osoba                |
+| `/zupa/$slug`                    | detalj katoličke župe (1561)                  |
+| `/ustanova/$slug`                | detalj ostalih mjesnih pravnih osoba (797)    |
+| `/biskupije`, `/biskupija/$slug` | biskupije i derivirani teritoriji             |
+| `/brojke`                        | pokrivenost i rupe                            |
+| `/o-projektu`                    | izvori, postupak, licenca                     |
+| `/sitemap.xml`                   | generiran iz indeksa, ~9400 URL-ova           |
 
 ## Deploy
 

@@ -73,6 +73,25 @@ export function geomKindLabel(value?: string): string | undefined {
   return undefined;
 }
 
+/**
+ * Hrvatska sklonidba uz broj: 1 crkva, 2–4 crkve, 5+ crkava — i to po
+ * ZADNJOJ znamenki, pa 21 ide u jedninu a 11 u množinu. Bez ovoga se dobiju
+ * rečenice tipa „1 spojenih građevina", koje su bile u prvom deployu.
+ */
+export function sklon(n: number, one: string, few: string, many: string): string {
+  const d1 = n % 10;
+  const d2 = n % 100;
+  if (d2 >= 11 && d2 <= 14) return many;
+  if (d1 === 1) return one;
+  if (d1 >= 2 && d1 <= 4) return few;
+  return many;
+}
+
+/** Broj + ispravno sklonjena imenica: „3 građevine". */
+export function broj(n: number, one: string, few: string, many: string): string {
+  return `${num(n)} ${sklon(n, one, few, many)}`;
+}
+
 const NF = new Intl.NumberFormat("hr-HR");
 export const num = (n: number) => NF.format(n);
 

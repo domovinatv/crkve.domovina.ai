@@ -5,6 +5,11 @@
   // crkve.domovina.ai kači se ručno u Cloudflare dashboardu (Workers → Domains).
   "name": "crkve-domovina",
 
+  // Račun D.O.M. — isti kao gis-domovina i klubovi-domovina. Eksplicitno jer
+  // je ovaj OAuth token vezan na više računa, pa bi wrangler inače tražio
+  // izbor i pao u neinteraktivnom pokretanju (deploy.sh, CI).
+  "account_id": "7dc7167b7e2e00923bfa7cd697df14e4",
+
   "compatibility_date": "2026-08-01",
   "compatibility_flags": ["nodejs_compat"],
 

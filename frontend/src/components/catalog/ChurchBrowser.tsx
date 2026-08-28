@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { Search } from "lucide-react";
 
 import type { ChurchIndexItem, ChurchKind } from "@/lib/catalog";
-import { KIND_LABEL, KIND_PLURAL, foldHr, num } from "@/lib/format";
+import { KIND_LABEL, KIND_PLURAL, broj, foldHr, num } from "@/lib/format";
 import { Chip } from "@/components/catalog/Bits";
 
 const PAGE = 60;
@@ -127,7 +127,7 @@ export function ChurchBrowser({
       <p className="text-sm text-muted-foreground" aria-live="polite">
         {items ? (
           <>
-            {num(results.length)} {results.length === 1 ? "objekt" : "objekata"}
+            {broj(results.length, "objekt", "objekta", "objekata")}
             {results.length !== items.length && <> od ukupno {num(items.length)}</>}
           </>
         ) : (

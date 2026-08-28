@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { loadDioceseIndex } from "@/lib/data";
 import { breadcrumbLd, pageHead } from "@/lib/seo";
-import { km2, num, pct } from "@/lib/format";
+import { broj, km2, num, pct } from "@/lib/format";
 import { Chip, PageHeading, Section } from "@/components/catalog/Bits";
 
 export const Route = createFileRoute("/biskupije")({
@@ -61,8 +61,10 @@ function Biskupije() {
                   <p className="mt-0.5 text-xs text-muted-foreground">Sjedište: {d.seat}</p>
                 )}
                 <div className="mt-3 flex flex-wrap gap-1.5">
-                  <Chip>{num(d.area_parish_count ?? 0)} župa</Chip>
-                  <Chip>{num(d.area_church_count ?? 0)} građevina</Chip>
+                  <Chip>{broj(d.area_parish_count ?? 0, "župa", "župe", "župa")}</Chip>
+                  <Chip>
+                    {broj(d.area_church_count ?? 0, "građevina", "građevine", "građevina")}
+                  </Chip>
                   {d.area_km2 !== undefined && <Chip>{km2(d.area_km2)}</Chip>}
                   {d.osm_agreement !== undefined && (
                     <Chip tone="verified" title="Slaganje derivirane granice s OSM relacijom">
@@ -93,7 +95,7 @@ function Biskupije() {
               <span className="font-semibold">{d.name}</span>
               {(d.parish_count ?? 0) > 0 && (
                 <span className="mt-0.5 block text-xs text-muted-foreground">
-                  {num(d.parish_count ?? 0)} pravnih osoba
+                  {broj(d.parish_count ?? 0, "pravna osoba", "pravne osobe", "pravnih osoba")}
                 </span>
               )}
             </Link>
