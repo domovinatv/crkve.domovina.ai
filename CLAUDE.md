@@ -103,7 +103,7 @@ posjeduje) — dvije teritorijalne podjele s punom ispunom daju mulj.
 
 **GeoJSON-i su gitignored u karta-web** — regeneriraju se, ne commitaju.
 
-## Vlastiti frontend (`frontend/`)
+## Vlastiti frontend (`frontend/`) — **crkve.domovina.ai**
 TanStack Start + Nitro → Cloudflare **Worker** (`crkve-domovina`), shadcn/ui +
 Tailwind v4. Nastao iz `../../stepanic/hr-site-starter`. Vlastite konvencije i
 zamke: **`frontend/CLAUDE.md`**; kako je nastao i zašto ovaj stack:
@@ -111,7 +111,9 @@ zamke: **`frontend/CLAUDE.md`**; kako je nastao i zašto ovaj stack:
 
 Podatke mu piše `scripts/34_export_static.py` (`make export-web`, ide POSLIJE
 `stats`) u `frontend/public/data/` — 9400 datoteka, gitignorane.
-Deploy: `cd frontend && ./scripts/deploy.sh`.
+Deploy: `cd frontend && ./scripts/deploy.sh` — regenerira podatke, provjeri,
+buildа, deploya i onda **provjeri žive rute na obje adrese**. Domena je
+`custom_domain` u `wrangler.jsonc`, wrangler je sam kači; ništa ručno.
 
 Dvije jedinice stranice, kao i u bazi: `/crkva/$slug` je građevina,
 `/zupa/$slug` i `/ustanova/$slug` su pravna osoba. `/ustanova/` postoji jer
@@ -243,6 +245,9 @@ samostan i crkvena općina nisu župe.
   pipeline radi, ali matching padne jer nema po čemu blokirati.
 - **`_upsert` koristi `COALESCE(excluded.x, table.x)`** — kasniji izvor ne
   smije obrisati polje koje je raniji popunio (Wikidata nakon OSM-a).
+- **Čim u `wrangler.jsonc` postoji `routes`, workers.dev se GASI** po defaultu.
+  Poddomena je jedina adresa na kojoj se deploy provjerava dok se certifikat
+  za novu domenu izdaje, pa je `"workers_dev": true` eksplicitan.
 - **Na Workeru `fetch` na vlastiti origin NE dohvaća assete** nego se vrati u
   sam Worker. SSR loader koji tako čita `/data/*` dobije 404, pa svaka
   stranica s loaderom postane 404 — a one bez loadera rade, što skriva uzrok.
@@ -278,6 +283,5 @@ matcher, Places validaciju ili derivaciju granica, pročitaj to prije nego
   487 bez župne crkve, 421 bez ijedne; na karti su crveni prsten u sloju Župe.
 - **Kontakti župa** (telefon/email/web) — nisu u državnoj evidenciji; išlo bi
   Firecrawlom po uzoru na `../klubovi.domovina.ai/scripts/04_backfill.py`.
-- **Domena `crkve.domovina.ai`** — frontend je živ na
-  `https://crkve-domovina.d-o-m.workers.dev`, ali domena još nije zakačena
-  (Workers → crkve-domovina → Domains & Routes).
+- **Fotografije** — samo 712 od 6966 građevina ima sliku s Commonsa. Detaljne
+  stranice imaju mjesto za nju, ali ga većinom nemaju čime popuniti.

@@ -4,8 +4,8 @@ Nastavak na `2026-08-27-frontend-plan.md`, koji je popisao što nedostaje.
 Ovaj dokument bilježi što je napravljeno, koje su odluke donesene i koja je
 zamka koštala jednog deploya.
 
-Živo: **https://crkve-domovina.d-o-m.workers.dev**
-Domena `crkve.domovina.ai` još nije zakačena.
+Živo: **https://crkve.domovina.ai** (i dalje i na
+`https://crkve-domovina.d-o-m.workers.dev`).
 
 ## Odstupanje od plana: drugi stack
 
@@ -143,9 +143,28 @@ const m = window.__crkveMap;
    klasteri: m.queryRenderedFeatures({ layers: ["crkve-clusters"] }).length })
 ```
 
+## Domena
+
+Zakačena je iz `wrangler.jsonc`, ne rukom u dashboardu:
+
+```jsonc
+"routes": [{ "pattern": "crkve.domovina.ai", "custom_domain": true }],
+"workers_dev": true,
+```
+
+Wrangler pri deployu sam napravi DNS zapis i certifikat. Dvije stvari koje su
+se pokazale tek u praksi:
+
+- **Čim postoji `routes`, `workers.dev` se gasi po defaultu.** Poddomena je
+  jedina adresa na kojoj se deploy može provjeriti dok se certifikat za novu
+  domenu izdaje, pa je `"workers_dev": true` eksplicitan.
+- **Provjera u `deploy.sh` se tiho preskočila.** URL se izvlačio s
+  `grep -oE … | head -1`; kad `routes` ugasi workers.dev, grep nema pogodak,
+  vrati 1, a `set -euo pipefail` ugasi skriptu — pa je deploy prošao
+  neprovjeren i izgledao uspješno. Otud `|| true` i provjera obiju adresa,
+  gdje je produkcijska domena „meka" (certifikat zna kasniti koju minutu).
+
 ## Sljedeće
 
-- Kačenje domene `crkve.domovina.ai` (Workers → crkve-domovina → Domains &
-  Routes, ili `routes` s `custom_domain: true` u `wrangler.jsonc`).
 - Fotografije: samo 712 od 6966 građevina ima sliku s Commonsa.
 - Kontakti župa — i dalje nema izvora.

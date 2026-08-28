@@ -37,29 +37,41 @@ bun run build
 
 echo "▶ deploy"
 wrangler deploy | tee "$FRONTEND_DIR/.deploy.log"
-DEPLOY_URL=$(grep -oE 'https://[a-z0-9.-]+workers\.dev' "$FRONTEND_DIR/.deploy.log" | head -1)
+# `|| true` je OBAVEZAN: bez pogotka grep vrati 1, a `set -euo pipefail` bi
+# skriptu tiho ugasio prije provjere — tako je jedan deploy prošao neprovjeren.
+WORKERS_DEV=$(grep -oE 'https://[a-z0-9.-]+workers\.dev' "$FRONTEND_DIR/.deploy.log" | head -1 || true)
 rm -f "$FRONTEND_DIR/.deploy.log"
 
 # Provjera POSLIJE deploya, jer se jedna klasa kvarova vidi SAMO na Workeru:
 # SSR loader koji fetcha vlastiti origin lokalno radi (dev server poslužuje
 # assete), a na Cloudflareu se vrati u sam worker i vrati 404 — pa svaka
 # stranica s loaderom postane 404 dok su one bez njega uredne. Dogodilo se.
-if [[ -n "$DEPLOY_URL" ]]; then
-  echo "▶ provjera na $DEPLOY_URL"
-  FAILED=0
+FAILED=0
+
+smoke() {
+  local base="$1" hard="$2" bad=0
+  echo "▶ provjera na $base"
   for path in / /crkve /zupe /biskupije /brojke /karta /o-projektu; do
-    code=$(curl -s -o /dev/null -w '%{http_code}' "$DEPLOY_URL$path")
-    printf "  %-3s %s\n" "$code" "$path"
-    [[ "$code" == "200" ]] || FAILED=1
+    code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "$base$path" || true)
+    printf "  %-3s %s\n" "${code:-000}" "$path"
+    [[ "$code" == "200" ]] || bad=1
   done
-  urls=$(curl -s "$DEPLOY_URL/sitemap.xml" | grep -c "<url>" || true)
+  urls=$(curl -s --max-time 60 "$base/sitemap.xml" | grep -c "<url>" || true)
   echo "  sitemap: $urls URL-ova"
-  [[ "$urls" -gt 9000 ]] || FAILED=1
-  if [[ "$FAILED" -ne 0 ]]; then
-    echo "✗ deploy je prošao, ali provjera nije. Ne kači domenu dok se ovo ne riješi." >&2
-    exit 1
-  fi
+  [[ "${urls:-0}" -gt 9000 ]] || bad=1
+  if [[ "$bad" -ne 0 && "$hard" == "hard" ]]; then FAILED=1; fi
+  return 0
+}
+
+[[ -n "$WORKERS_DEV" ]] && smoke "$WORKERS_DEV" hard
+
+# Produkcijska domena je "soft": poslije prvog deploya s novom domenom
+# certifikat zna trebati koju minutu, pa neuspjeh ovdje nije razlog za pad.
+smoke "https://crkve.domovina.ai" soft
+
+if [[ "$FAILED" -ne 0 ]]; then
+  echo "✗ deploy je prošao, ali provjera nije." >&2
+  exit 1
 fi
 
-echo "✓ gotovo. Domena crkve.domovina.ai kači se ručno:"
-echo "  Cloudflare dashboard → Workers & Pages → crkve-domovina → Settings → Domains & Routes"
+echo "✓ gotovo."

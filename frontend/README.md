@@ -40,10 +40,12 @@ wrangler whoami          # račun D.O.M.
 ./scripts/deploy.sh
 ```
 
-Skripta regenerira podatke, provjeri typecheck i lint, buildа i deploya.
-Worker se zove `crkve-domovina`; produkcijska domena `crkve.domovina.ai` kači
-se **ručno** u Cloudflare dashboardu (Workers & Pages → crkve-domovina →
-Settings → Domains & Routes).
+Skripta regenerira podatke, provjeri typecheck i lint, buildа, deploya i onda
+provjeri žive rute — ne samo `workers.dev`, nego i produkcijsku domenu.
+
+Worker se zove `crkve-domovina`, a domena `crkve.domovina.ai` je u
+`wrangler.jsonc` kao `custom_domain`, pa je wrangler sam kači i radi DNS zapis.
+Ništa se ne kači ručno u dashboardu.
 
 Worker nema nijedan secret ni binding — katalog je statički JSON u assetima.
 

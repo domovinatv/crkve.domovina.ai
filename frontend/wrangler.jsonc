@@ -2,7 +2,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
 
   // Ovo postaje crkve-domovina.<subdomena>.workers.dev; produkcijska domena
-  // crkve.domovina.ai kači se ručno u Cloudflare dashboardu (Workers → Domains).
+  // je niže, u "routes".
   "name": "crkve-domovina",
 
   // Račun D.O.M. — isti kao gis-domovina i klubovi-domovina. Eksplicitno jer
@@ -14,6 +14,16 @@
   "compatibility_flags": ["nodejs_compat"],
 
   "observability": { "enabled": true },
+
+  // Produkcijska domena. `custom_domain: true` znači da wrangler pri deployu
+  // sam napravi DNS zapis i certifikat u zoni domovina.ai — ne treba ručno
+  // kačenje u dashboardu. Zona mora biti na istom računu (D.O.M.).
+  "routes": [{ "pattern": "crkve.domovina.ai", "custom_domain": true }],
+
+  // Eksplicitno true: čim postoji "routes", wrangler workers.dev ISKLJUČUJE po
+  // defaultu. Poddomena je jedina adresa na kojoj se deploy može provjeriti
+  // dok se certifikat za novu domenu još izdaje, pa ostaje uključena.
+  "workers_dev": true,
 
   // NAMJERNO nema "main" ni "assets": Nitro ih generira sam u
   // .output/server/wrangler.json i tamošnje vrijednosti pobjeđuju.

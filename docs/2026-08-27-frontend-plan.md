@@ -1,7 +1,7 @@
 # Zaseban frontend crkve.domovina.ai — što nedostaje
 
 > **ZASTARJELO od 2026-08-28.** Frontend je napravljen i živ je na
-> `https://crkve-domovina.d-o-m.workers.dev`. Nije napravljen po ovom planu:
+> **https://crkve.domovina.ai**. Nije napravljen po ovom planu:
 > umjesto Vite SPA + Pages + ručnog `_worker.js` uzet je TanStack Start +
 > Nitro → Worker, pa `_worker.js` i obje njegove zamke otpadaju. Što je
 > stvarno napravljeno i zašto: **`2026-08-28-frontend-tanstack.md`**.
