@@ -129,10 +129,8 @@ shadcn komponenti je normalno), `build` prolazi; 11 ruta vraća 200 i na
 `<title>`, `description`, canonical, OG i JSON-LD su u HTML-u prije
 hidracije; sitemap 9401 URL.
 
-**Nije provjereno okom: iscrtavanje karte.** MapLibre dovršava učitavanje
-stila u render petlji, a `requestAnimationFrame` u skrivenom tabu ne radi —
-pa u automatiziranom pregledniku `map.on("load")` nikad ne okine i screenshot
-pokazuje prazan okvir. Instanca je izložena kao `window.__crkveMap` (isti
+**Karta je ostala neprovjerena okom, i kad se provjerila — nije radila.**
+Vidi sljedeće poglavlje. Instanca je izložena kao `window.__crkveMap` (isti
 obrazac kao `window._gisMap` u `karta-hrvatske`), pa se u konzoli vidljivog
 prozora provjerava s:
 
@@ -142,6 +140,68 @@ const m = window.__crkveMap;
    tocke: m.queryRenderedFeatures({ layers: ["crkve-tocke"] }).length,
    klasteri: m.queryRenderedFeatures({ layers: ["crkve-clusters"] }).length })
 ```
+
+## Druga zamka koju build napravi, a dev ne: MapLibreov worker
+
+Karta na živoj stranici nije radila. Okvir je bio prazno siv, ali **bez ijedne
+greške u konzoli** — kontrole (+/−, mjerilo, atribucija) uredno iscrtane, stil
+dohvaćen s 200, sprite i glyphovi s 200, indeks od 6966 zapisa učitan, legenda
+s 11 vrsta i točnim brojkama ispod karte.
+
+Prva hipoteza je bila već zapisana u dokumentu: skriveni tab, `rAF` ne radi,
+MapLibre ne dovrši stil. Izmjerena je i **potvrđena kao pojava, ali odbačena
+kao uzrok** — u vidljivom tabu (`visibilityState: "visible"`, `rAF` radi) karta
+je stala na istom mjestu. Zapisana tvrdnja iz dokumenta zamalo je pojela drugu
+sesiju; nalaz je bio točan, objašnjenje krivo.
+
+Mjerenja koja su pokazala pravi uzrok:
+
+| što | vrijednost |
+|---|---|
+| `map.isStyleLoaded()` | `false` (neograničeno) |
+| `style.tileManagers.openmaptiles.loaded()` | `false` |
+| zahtjeva za `.pbf` pločicama | **0** |
+| `style.dispatcher.broadcast(…)` | TIMEOUT |
+| `GET /assets/maplibre-gl-worker.mjs` | **404** (SPA HTML fallback) |
+
+Nula zahtjeva za pločicama je ključ: pločice dohvaća **worker**, ne glavna
+dretva. MapLibre v6 workera ne ugrađuje u bundle nego ga traži kao zaseban
+modul, na adresi izvedenoj iz `import.meta.url` vlastitog chunka:
+
+```js
+new URL("./maplibre-gl-worker.mjs", import.meta.url)
+```
+
+To je URL sastavljen u runtimeu. Bundler ga ne vidi kao import, pa datoteku ne
+emitira — u `.output/public/assets/` je bio samo `maplibre-gl-<hash>.js`, bez
+workera. Worker se nikad ne javi, dispatcher čeka zauvijek, `map.on("load")` ne
+okine i naši slojevi (`crkve-tocke`, `crkve-clusters`, `crkve-cluster-count`)
+se ne dodaju. Ništa od toga ne baca grešku.
+
+`bun run dev` to ne može uhvatiti: ondje Vite servira
+`node_modules/maplibre-gl/dist/`, gdje worker stvarno stoji uz svoj chunk.
+**Kvar postoji samo u buildu** — kao i zamka s asetima iz prethodnog poglavlja,
+ali iz drugog razloga: ondje je krivo pitan runtime, ovdje datoteke nema.
+
+Ispravak je `frontend/src/lib/maplibre.ts` — jedina dopuštena točka učitavanja
+MapLibrea, koja workera zapakira kroz Vite i prijavi ga prije prve karte:
+
+```ts
+import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
+const maplibregl = await import("maplibre-gl");
+maplibregl.setWorkerUrl(workerUrl);
+```
+
+`?worker&url` tjera Vite da workera zapakira zajedno s njegovim
+`maplibre-gl-shared.mjs` (477 kB, bez ijednog vanjskog importa) i emitira kao
+hashiran asset. Poslije ispravka, mjereno na `wrangler dev --local`:
+`styleLoaded true`, 26 dohvaćenih pločica, 3 naša sloja, 10 klastera na razini
+države (zbroj ≈ 6030 = 6966 minus 900 poklonaca ugašenih po defaultu) i 57
+pojedinačnih točaka na zumu 13,5 nad Zagrebom. MiniMap na detaljnoj stranici
+radi iz istog ispravka.
+
+Pouka za `frontend/CLAUDE.md`: prazan sivi okvir ima **dva** uzroka i
+razlikuju se mjerenjem — prvo `document.visibilityState`, pa tek onda worker.
 
 ## Domena
 

@@ -4,6 +4,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 
 import type { ChurchIndexItem, ChurchKind } from "@/lib/catalog";
 import { KIND_PLURAL, KIND_LABEL, num } from "@/lib/format";
+import { loadMapLibre } from "@/lib/maplibre";
 
 /**
  * Karta cijelog kataloga. MapLibre GL, isti basemap kao gis.domovina.ai
@@ -127,8 +128,9 @@ export function CatalogMap({
     let cancelled = false;
 
     void (async () => {
-      // maplibre-gl v6 nema default export — samo imenovane.
-      const maplibregl = await import("maplibre-gl");
+      // Uvijek kroz `loadMapLibre` — inače worker ostane nezapakiran i karta
+      // se u buildu tiho ne učita (objašnjeno u `@/lib/maplibre`).
+      const maplibregl = await loadMapLibre();
       if (cancelled || !containerRef.current) return;
 
       const map = new maplibregl.Map({

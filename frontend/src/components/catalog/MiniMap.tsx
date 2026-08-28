@@ -2,6 +2,8 @@ import { useEffect, useRef } from "react";
 import type { Map as MlMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 
+import { loadMapLibre } from "@/lib/maplibre";
+
 const STYLE_LIGHT = "https://tiles.openfreemap.org/styles/positron";
 
 /**
@@ -30,8 +32,9 @@ export function MiniMap({
     let cancelled = false;
 
     void (async () => {
-      // maplibre-gl v6 nema default export — samo imenovane.
-      const maplibregl = await import("maplibre-gl");
+      // Uvijek kroz `loadMapLibre` — inače worker ostane nezapakiran i karta
+      // se u buildu tiho ne učita (objašnjeno u `@/lib/maplibre`).
+      const maplibregl = await loadMapLibre();
       if (cancelled || !containerRef.current) return;
 
       const map = new maplibregl.Map({

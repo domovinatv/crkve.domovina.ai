@@ -253,6 +253,12 @@ samostan i crkvena općina nisu župe.
   stranica s loaderom postane 404 — a one bez loadera rade, što skriva uzrok.
   Ispravno je `env.ASSETS.fetch()` (`frontend/src/lib/data.ts`). Lokalni
   `bun run dev` to NE hvata; `wrangler dev --local` hvata.
+- **MapLibre v6 workera traži kao zasebnu datoteku** koju bundler ne emitira
+  (URL se sastavlja u runtimeu iz `import.meta.url`). U buildu je to 404,
+  worker ne dohvati nijednu pločicu, `map.on("load")` ne okine i karta ostane
+  prazna **bez ijedne greške**. Zato se MapLibre učitava samo kroz
+  `frontend/src/lib/maplibre.ts`. Prazan okvir ima dva uzroka — skriven tab i
+  mrtav worker — i razlikuju se mjerenjem, vidi `frontend/CLAUDE.md`.
 - **Licenca podataka nije čisti CC-BY** — OSM je ODbL i nameće share-alike na
   izvedenu bazu. Vidi `LICENSE-DATA`.
 

@@ -79,10 +79,19 @@ datoteke (detalj, stats, manifest, biskupije).
   objekte.
 - **`maplibre-gl` v6 nema default export.** `(await import(…)).default` je
   `undefined`; koristi imenovane (`const m = await import("maplibre-gl")`).
-- **Karta se ne inicijalizira u skrivenom tabu.** MapLibre dovršava učitavanje
-  stila u render petlji, a `requestAnimationFrame` u pozadinskom tabu ne radi
-  — `map.on("load")` nikad ne okine. Screenshot preko automatizacije zato
-  pokazuje prazan okvir; to nije bug nego nevidljiv prozor.
+- **MapLibre se učitava ISKLJUČIVO kroz `@/lib/maplibre`,** nikad izravnim
+  `await import("maplibre-gl")`. v6 workera drži u zasebnoj datoteci koju traži
+  s `new URL("./maplibre-gl-worker.mjs", import.meta.url)` — URL sastavljen u
+  runtimeu, pa ga Vite ne vidi i ne emitira. U buildu je to onda 404 i karta
+  **tiho** stane: stil se parsira, kontrole se iscrtaju, ali worker ne dohvati
+  nijednu pločicu, `map.on("load")` ne okine i naši slojevi se ne dodaju — bez
+  ijedne greške u konzoli. `?worker&url` + `setWorkerUrl` to rješava.
+- **Prazan sivi okvir ima dva uzroka i treba ih razlikovati mjerenjem.**
+  Prvo `document.visibilityState`: u skrivenom tabu `requestAnimationFrame` ne
+  radi, MapLibre ne dovrši stil i to nije bug nego nevidljiv prozor. Ako je tab
+  `visible`, mjeri worker — `style.dispatcher.broadcast(…)` koji timeouta i
+  nula `.pbf` zahtjeva znače da worker nije živ. Jedna sesija je izgubljena
+  jer je prvi uzrok uzet kao objašnjenje za drugi.
 - Instanca je izložena kao `window.__crkveMap` za provjeru u konzoli (isti
   obrazac kao `window._gisMap` u `../../karta-hrvatske`).
 
