@@ -103,6 +103,20 @@ posjeduje) — dvije teritorijalne podjele s punom ispunom daju mulj.
 
 **GeoJSON-i su gitignored u karta-web** — regeneriraju se, ne commitaju.
 
+## Vlastiti frontend (`frontend/`)
+TanStack Start + Nitro → Cloudflare **Worker** (`crkve-domovina`), shadcn/ui +
+Tailwind v4. Nastao iz `../../stepanic/hr-site-starter`. Vlastite konvencije i
+zamke: **`frontend/CLAUDE.md`**; kako je nastao i zašto ovaj stack:
+**`docs/2026-08-28-frontend-tanstack.md`**.
+
+Podatke mu piše `scripts/34_export_static.py` (`make export-web`, ide POSLIJE
+`stats`) u `frontend/public/data/` — 9400 datoteka, gitignorane.
+Deploy: `cd frontend && ./scripts/deploy.sh`.
+
+Dvije jedinice stranice, kao i u bazi: `/crkva/$slug` je građevina,
+`/zupa/$slug` i `/ustanova/$slug` su pravna osoba. `/ustanova/` postoji jer
+samostan i crkvena općina nisu župe.
+
 ## Gotchas (naučeno na teži način)
 - **Križevačka eparhija ne smije u particiju biskupija** — grkokatolička je,
   teritorij joj se preklapa sa svim latinskima, a 35 župa joj je razasuto po
@@ -229,6 +243,11 @@ posjeduje) — dvije teritorijalne podjele s punom ispunom daju mulj.
   pipeline radi, ali matching padne jer nema po čemu blokirati.
 - **`_upsert` koristi `COALESCE(excluded.x, table.x)`** — kasniji izvor ne
   smije obrisati polje koje je raniji popunio (Wikidata nakon OSM-a).
+- **Na Workeru `fetch` na vlastiti origin NE dohvaća assete** nego se vrati u
+  sam Worker. SSR loader koji tako čita `/data/*` dobije 404, pa svaka
+  stranica s loaderom postane 404 — a one bez loadera rade, što skriva uzrok.
+  Ispravno je `env.ASSETS.fetch()` (`frontend/src/lib/data.ts`). Lokalni
+  `bun run dev` to NE hvata; `wrangler dev --local` hvata.
 - **Licenca podataka nije čisti CC-BY** — OSM je ODbL i nameće share-alike na
   izvedenu bazu. Vidi `LICENSE-DATA`.
 
@@ -242,9 +261,11 @@ Zašto su granice biskupija izračunate i kako su izmjerene:
 rupa u OSM-u nego odluka matchera, i koju dijagnozu napraviti prije izmjene:
 **`docs/2026-08-17-bastina-nespojeno.md`**. Kako je homonim naselja obojao Rab
 u zadarsko i zašto je korekcija dvaput bila neidempotentna:
-**`docs/2026-08-17-revizija-lokacija-zupa.md`**. Ako mijenjaš matcher, Places validaciju
-ili derivaciju granica, pročitaj to prije nego "popraviš" nešto što je
-namjerno.
+**`docs/2026-08-17-revizija-lokacija-zupa.md`**. Kako je nastao vlastiti
+frontend, zašto TanStack Start umjesto SPA + Pages iz starijeg plana, i zamka
+s assetima na Workeru: **`docs/2026-08-28-frontend-tanstack.md`**. Ako mijenjaš
+matcher, Places validaciju ili derivaciju granica, pročitaj to prije nego
+"popraviš" nešto što je namjerno.
 
 ## Otvoreno / sljedeći koraci
 - **`heritage_unmatched`** — ostatak zaštićene baštine bez para (izvozi se u
@@ -257,9 +278,6 @@ namjerno.
   487 bez župne crkve, 421 bez ijedne; na karti su crveni prsten u sloju Župe.
 - **Kontakti župa** (telefon/email/web) — nisu u državnoj evidenciji; išlo bi
   Firecrawlom po uzoru na `../klubovi.domovina.ai/scripts/04_backfill.py`.
-- **Zaseban frontend crkve.domovina.ai** — po uzoru na
-  `../klubovi.domovina.ai/frontend` (React PWA, Cloudflare Pages). **Nije
-  rađen, i domena ne postoji ni u DNS-u.** Provjereno stanje, popis posla,
-  CF račun i zamke iz `_worker.js` uzorka:
-  **`docs/2026-08-27-frontend-plan.md`**. Neriješeno: nosi li detaljna
-  stranica građevinu, pravnu osobu ili oboje — dvije tablice nisu isti skup.
+- **Domena `crkve.domovina.ai`** — frontend je živ na
+  `https://crkve-domovina.d-o-m.workers.dev`, ali domena još nije zakačena
+  (Workers → crkve-domovina → Domains & Routes).
