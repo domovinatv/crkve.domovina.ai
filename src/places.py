@@ -102,10 +102,26 @@ class PlacesError(RuntimeError):
     """Greška koja znači 'ne pokušavaj dalje' (ključ, kvota, dozvole)."""
 
 
+def offline() -> bool:
+    """`PLACES_OFFLINE=1`: samo keš, promašaj = prazan rezultat, nikad mreža.
+
+    Rebuild iz keša mora biti moguć bez ključa i bez mreže. Keš nije potpun
+    za današnji kod: upiti se probaju redom dok `pick` ne prihvati rezultat, a
+    `pick` ovisi o sidru (naselje, županija). Korekcija homonima (scripts/14,
+    2026-08-17) došla je POSLIJE Places runa (2026-08-15), pa za 5 župa
+    (Kostanjevac, Vrh, Sveti Vid, Vrana, Selca) prvi keširani rezultat danas
+    pada na sidru i petlja traži varijantu upita koja nikad nije dohvaćena.
+    Izmjereno 2026-11-20, vidi docs/research/2026-11-20-audit-polazno.md.
+    """
+    return os.environ.get("PLACES_OFFLINE", "") not in ("", "0")
+
+
 class PlacesClient:
     def __init__(self, api_key: str | None = None):
         self.api_key = api_key or os.environ.get("GOOGLE_MAPS_API_KEY")
-        if not self.api_key:
+        self.offline = offline()
+        self.cache_misses: list[str] = []
+        if not self.api_key and not self.offline:
             raise PlacesError(
                 "GOOGLE_MAPS_API_KEY nije postavljen. Kopiraj .env.example u .env "
                 "i upiši ključ (Places API New mora biti uključen na projektu)."
@@ -141,6 +157,10 @@ class PlacesClient:
         if cache.exists():
             self.cache_hits += 1
             data = json.loads(cache.read_text())
+        elif self.offline:
+            self.cache_misses.append(query)
+            logger.warning("places offline: nema u kešu %r", query)
+            return []
         else:
             r = self._client.post(
                 PLACES_URL,

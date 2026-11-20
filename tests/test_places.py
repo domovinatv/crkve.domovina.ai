@@ -165,3 +165,28 @@ def test_no_anchor_means_no_distance_filter():
     # nema baš nikakvu poznatu poziciju).
     assert pick([_res("Crkva sv. Ane", latlng=BRSEC)],
                 "ŽUPA SV. ANE", None) is not None
+
+
+def test_offline_cache_miss_returns_empty_without_network(monkeypatch, tmp_path):
+    from src import places
+
+    monkeypatch.setenv("PLACES_OFFLINE", "1")
+    monkeypatch.delenv("GOOGLE_MAPS_API_KEY", raising=False)
+    monkeypatch.setattr(places, "CACHE_DIR", tmp_path)
+
+    def boom(*_a, **_k):
+        raise AssertionError("offline način ne smije na mrežu")
+
+    with places.PlacesClient() as client:
+        monkeypatch.setattr(client._client, "post", boom)
+        assert client.search_text("Župa sv. Mihovila Ark., Vrh") == []
+        assert client.cache_misses == ["Župa sv. Mihovila Ark., Vrh"]
+        assert client.calls == 0
+
+
+def test_offline_flag_values(monkeypatch):
+    from src import places
+
+    for v, want in (("", False), ("0", False), ("1", True)):
+        monkeypatch.setenv("PLACES_OFFLINE", v)
+        assert places.offline() is want

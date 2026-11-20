@@ -124,6 +124,8 @@ def run(limit: int | None = None, verify_only: bool = False) -> None:
                                  i, len(rows), client.calls, client.cache_hits, dict(stats))
                 log.info("Places poziva: %d (novih), iz keša: %d",
                          client.calls, client.cache_hits)
+                if client.offline:
+                    log.info("Places offline: promašaja keša %d", len(client.cache_misses))
         except PlacesError as e:
             conn.commit()
             log.error("%s", e)
