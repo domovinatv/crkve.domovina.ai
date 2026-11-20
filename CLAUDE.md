@@ -260,6 +260,11 @@ samostan i crkvena općina nisu župe.
 - **Naselje se dodjeljuje prostorno** iz `../karta-hrvatske` naselja.geojson,
   ne iz OSM `addr:*` (prerijetki). Bez susjednog repoa (`KARTA_DATA_DIR`)
   pipeline radi, ali matching padne jer nema po čemu blokirati.
+- **Ista zgrada kao OSM čvor i kao tlocrt spaja se na kraju `01`** (`src/dedup.py`,
+  odluke 400–404): uloga (samostan/poklonac/bogoslužje) mora biti ista, nazivi spojivi (ili
+  jedna strana bez OSM `name`), ≤ 20 m. Bez poligona (ingest je `out center`) „točka u
+  tlocrtu” se ne da provjeriti, pa su parovi 20–40 m `OSTAVLJENI`, a iznimke `SPOJI`.
+  Identitet čvora je u `church_merged`; stari slug je `{"redirect"}` u exportu i 301 na webu.
 - **`_upsert` koristi `COALESCE(excluded.x, table.x)`** — kasniji izvor ne
   smije obrisati polje koje je raniji popunio (Wikidata nakon OSM-a).
 - **Čim u `wrangler.jsonc` postoji `routes`, workers.dev se GASI** po defaultu.

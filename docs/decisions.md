@@ -273,3 +273,47 @@ novom koja se poziva na staru. Blokovi: S0 1–99, S1 100–199, S2 200–299 �
    Bistrice (Q107013115 na „Kapela”, bazilika gubi sliku). To su duplikati, a njih rješava S4;
    pravilo se uzima tamo zajedno s dedupom i mjeri na istom rebuildu. Do tada Knežija
    (Q133733258) ostaje stopljena — poznata regresija S3, prva stavka S4.
+
+## S4 (2026-11-20)
+
+400. **OSM čvor i tlocrt iste zgrade spajaju se u ingestu, po ulozi, nazivu i udaljenosti**
+   (`src/dedup.py`, poziva ga kraj `scripts/01`, prije `05` i 10/11). Uloga iz tagova:
+   samostan (`amenity|building=monastery`), poklonac (`historic=wayside_shrine`), bogoslužje;
+   različita uloga = dvije zgrade (17 takvih parova je na ≤ 20 m). Nazivi: isti `norm_key`, ista
+   glava ili jedna strana bez OSM `name` (`osm_named = 0`; „generičko” znači placeholder iz
+   `01`, ne naziv bez titulara); različite glave nikad. Preživljava way/relation (id, slug,
+   koordinate, `geom_kind`, OSM id); ostalo `COALESCE(way, čvor)`; naziv i titular s čvora kad
+   way nema imena; kind ostaje wayev (`building=chapel` je jači dokaz od `amenity` bez
+   `building`) osim kad ga je izveo naziv čvora ili je wayev `ostalo` — prva verzija koja je
+   kind uvijek uzimala s čvora pokvarila je 6 kapela. Naziv čvora koji se razlikuje ide u
+   `church_aliases` (`osm-dedup`). Uloga, „ima ime” i `amenity` su kolone `osm_role`,
+   `osm_named`, `osm_amenity`, jer ih audit mora računati nad bazom istim predikatima.
+   Dodjela: čvor → najbliži dopušteni way (izjednačenje po OSM id-u); way prima više čvorova
+   samo dok su međusobno spojivi. Izmjereno: 73 spoja, crkava 6961 → 6889
+   (`docs/research/2026-11-20-s4-dedup.md`).
+401. **Prag 20 m; do 40 m samo za čisti tlocrt s jedinim kandidatom.** Spojivih parova je 67
+   na ≤ 20 m i 9 na 20–40 m, od kojih nijedan nije dokaziv bez poligona (ingest ima samo
+   `center`). Prošireni prag vrijedi kad way nema ni imena ni `amenity` i par je jedini
+   kompatibilni s obje strane; hvata točno Samostan sv. Vinka (23 m). Bez uvjeta
+   jedinstvenosti bezimeni tlocrt u Velom Lošinju primio bi i Sv. Križ (28 m) uz Navještenje
+   (0,4 m). Prag 40 m za sve dao bi +7 spojeva, od toga 2 vjerojatno krive (kapela ↔ crkva iste
+   glave, različite župe). Revizija: kad ingest dobije geometriju (`out geom`) — onda točka u
+   poligonu.
+402. **Različit `wikidata` tag na čvoru i wayu = ne spaja se** (0 takvih parova danas; pravilo
+   je zaštita za ponovni ingest). Ručne iznimke su u kodu s razlogom: `dedup.SPOJI` 7 parova
+   (2 poklonca u središtu tlocrta kapelice na 0,3/0,6 m; 5 istih svetaca drukčije napisanih —
+   Salvatore/Salvadur, Petar/„S. Pietro”, Križ/„Kris”, Pelegrin/„Peegrin”, Grabrovica Sv.
+   Marija/Materinstvo Majke Božje, svi ≤ 7 m), `NAZIV_S_CVORA` kad je naziv waya tipfeler ili
+   talijanski, `NE_SPAJAJ` (prazan) i `OSTAVLJENI` 7 neodlučivih parova na 27–40 m.
+403. **Identitet spojenog čvora živi u tablici `church_merged`** (odluka 6): `church_id` →
+   preživjeli, `osm_type`/`osm_id`, stari `slug`, naziv čvora, razlog, udaljenost. Ponovni
+   ingest ga deterministički ponovo spaja i upsertom osvježava red; red čiji se čvor vratio u
+   `churches` (pravilo ga više ne spaja) briše se, da stari slug ne vodi na dva mjesta.
+   `church_aliases` ostaje samo za nazive.
+404. **Stari slug daje 301, ne 404; `node_way_duplikati` broji samo ono što je pravilo
+   propustilo.** `scripts/34` piše `crkva/<stari>.json` = `{"redirect": novi}` (izvan indeksa
+   i sitemapa), ruta `/crkva/$slug` baca `redirect(statusCode: 301)`; provjereno na
+   `wrangler dev --local`. Metrika koristi dedupove predikate na ≤ 40 m (uključujući stranu bez
+   imena, koju stara definicija nije vidjela): `value` = spojiv par iste uloge koji nije spojen
+   i nije u `OSTAVLJENI`; različita uloga, različit `wikidata` i `OSTAVLJENI` idu u
+   `namjerno_ostavljeni` (45), broj spojenih u `spojeno`. Poslije: 0; po staroj definiciji 7.
