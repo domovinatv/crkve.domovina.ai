@@ -25,6 +25,25 @@ from src.kinds import classify, denomination_hr, religion_of
         ({}, "Bazilika Srca Isusova", "bazilika"),
         ({}, "Franjevački samostan", "samostan"),
         ({}, None, "ostalo"),
+        # building=mosque/synagogue je zgrada, ne namjena: bivša džamija u
+        # Đakovu je katolička crkva Svih Svetih (OSM w522826735)…
+        ({"amenity": "place_of_worship", "building": "mosque", "religion": "christian",
+          "denomination": "roman_catholic"}, "crkva Svih Svetih", "crkva"),
+        # …a pentekostna crkva u Osijeku stoji u bivšoj sinagogi (w555206682).
+        ({"amenity": "place_of_worship", "building": "synagogue", "religion": "christian",
+          "denomination": "pentecostal"}, "Evanđeoska pentakostalna crkva Radosne vijesti",
+         "crkva"),
+        # Prave džamije i sinagoge ne mijenjaju kind.
+        ({"amenity": "place_of_worship", "building": "mosque", "religion": "muslim"},
+         "Džamija Gunja", "dzamija"),
+        ({"building": "mosque"}, None, "dzamija"),                       # Vidovići
+        ({"amenity": "place_of_worship", "building": "synagogue", "religion": "jewish"},
+         "Mala sinagoga", "sinagoga"),
+        ({"building": "synagogue"}, "Varaždinska sinagoga", "sinagoga"),
+        # Višestruka konfesija normalizirana → prepoznato pravoslavlje.
+        ({"amenity": "place_of_worship", "religion": "christian",
+          "denomination": "serbian_orthodox;orthodox"},
+         "Srpska pravoslavna crkva svetih Petra i Pavla", "pravoslavna-crkva"),
     ],
 )
 def test_classify(tags, name, expected):
@@ -36,6 +55,12 @@ def test_religion_falls_back_to_kind():
     assert religion_of({}, "dzamija") == "muslim"
     assert religion_of({"religion": "christian"}, "ostalo") == "christian"
     assert religion_of({}, "ostalo") is None
+
+
+def test_religion_normalizirana():
+    assert religion_of({"religion": "krščanstvo1"}, "poklonac") == "christian"
+    # Nepoznata religija iz izvora nije dokaz kršćanstva — ne pada na kind.
+    assert religion_of({"religion": "bogomilism"}, "ostalo") is None
 
 
 def test_denomination_hr():

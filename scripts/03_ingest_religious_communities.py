@@ -26,6 +26,9 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from src import titular  # noqa: E402
+# Naziv zajednice → (religion, denomination): pravila žive u src/denomination.py
+# (ista definicija kao za OSM i audit, i testabilna — ovaj modul se ne može importati).
+from src.denomination import community_denomination as denom_for  # noqa: E402
 from src.datagovhr import (  # noqa: E402
     VJERSKE_ORG_OBLICI,
     VJERSKE_ZAJEDNICE,
@@ -38,29 +41,6 @@ from src.normalize import slugify, title_case_hr  # noqa: E402
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("vjerske")
 
-# Naziv zajednice → (religion, denomination). Ono što se ne prepozna dobiva
-# religion=NULL umjesto pogrešne pretpostavke.
-_DENOM_RULES: list[tuple[re.Pattern, tuple[str, str]]] = [
-    (re.compile(r"SRPSKA\s+PRAVOSLAVNA", re.I), ("christian", "serbian_orthodox")),
-    (re.compile(r"MAKEDONSKA\s+PRAVOSLAVNA", re.I), ("christian", "macedonian_orthodox")),
-    (re.compile(r"BUGARSKA\s+PRAVOSLAVNA", re.I), ("christian", "bulgarian_orthodox")),
-    (re.compile(r"PRAVOSLAVN", re.I), ("christian", "orthodox")),
-    (re.compile(r"ISLAMSK|MUSLIMANSK", re.I), ("muslim", "sunni")),
-    (re.compile(r"ŽIDOVSK|JEVREJSK|IZRAELITSK", re.I), ("jewish", "jewish")),
-    (re.compile(r"EVANGELIČK|LUTERANSK", re.I), ("christian", "evangelical")),
-    (re.compile(r"REFORM|KALVIN", re.I), ("christian", "reformed")),
-    (re.compile(r"BAPTIST", re.I), ("christian", "baptist")),
-    (re.compile(r"ADVENTIST", re.I), ("christian", "adventist")),
-    (re.compile(r"PENTEKOST|DUHOVN\w*\s+CRKV", re.I), ("christian", "pentecostal")),
-    (re.compile(r"JEHOVIN", re.I), ("christian", "jehovahs_witness")),
-    (re.compile(r"GRKOKATOLIČK|KRIŽEVAČK", re.I), ("christian", "greek_catholic")),
-    (re.compile(r"STAROKATOLIČK", re.I), ("christian", "old_catholic")),
-    (re.compile(r"METODIST", re.I), ("christian", "methodist")),
-    (re.compile(r"KRIST|CRKV|EVANĐEO|EVANDEO", re.I), ("christian", "protestant")),
-    (re.compile(r"BUDIST", re.I), ("buddhist", "buddhist")),
-    (re.compile(r"HINDU|VAIŠNAV|VAISNAV", re.I), ("hindu", "hindu")),
-]
-
 _ORG_KIND_RULES: list[tuple[str, re.Pattern]] = [
     ("parohija", re.compile(r"\bPAROHIJA\b|\bCRKVEN\w*\s+OPĆIN\w*\b.*PRAVOSLAV", re.I)),
     ("dzemat", re.compile(r"\bDŽEMAT\b|\bMEDŽLIS\b|\bMEDZLIS\b", re.I)),
@@ -68,13 +48,6 @@ _ORG_KIND_RULES: list[tuple[str, re.Pattern]] = [
     ("eparhija", re.compile(r"\bEPARHIJA\b|\bMITROPOLIJA\b", re.I)),
     ("samostan", re.compile(r"\bMANASTIR\b|\bSAMOSTAN\b", re.I)),
 ]
-
-
-def denom_for(name: str) -> tuple[str | None, str | None]:
-    for pat, (rel, den) in _DENOM_RULES:
-        if pat.search(name or ""):
-            return rel, den
-    return None, None
 
 
 def org_kind(name: str) -> str:
@@ -95,7 +68,7 @@ def run() -> None:
             naziv = (r.get("NAZIV") or "").strip()
             if not naziv:
                 continue
-            rel, den = denom_for(naziv)
+            rel, den = denom_for(naziv) or (None, None)
             _, city = split_sjediste(r.get("SJEDISTE"))
             upsert_diocese(
                 conn,
@@ -117,9 +90,7 @@ def run() -> None:
                 continue
             zajednica = (r.get("VJERSKA_ZAJEDNICA") or "").strip() or None
             # Denominacija se izvodi iz zajednice (pouzdanije), pa iz naziva.
-            rel, den = denom_for(zajednica or "")
-            if not rel:
-                rel, den = denom_for(naziv)
+            rel, den = denom_for(zajednica or "") or denom_for(naziv) or (None, None)
 
             street, city = split_sjediste(r.get("SJEDISTE"))
             oib = (r.get("OIB_ORGANIZACIJSKOG_OBLIKA") or "").strip() or None

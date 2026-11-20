@@ -16,6 +16,8 @@ from __future__ import annotations
 
 import re
 
+from .denomination import normalize_denomination, normalize_religion
+
 # Kanonski tipovi. Redoslijed = prioritet kod klasifikacije po nazivu
 # (katedrala pobjeđuje crkvu jer je i katedrala "crkva").
 KINDS = [
@@ -85,6 +87,12 @@ DENOMINATION_HR = {
     "baptist": "baptistička",
     "pentecostal": "pentekostna",
     "adventist": "adventistička",
+    "seventh_day_adventist": "adventistička",
+    "methodist": "metodistička",
+    "waldensian": "valdenška",
+    "new_apostolic": "novoapostolska",
+    "mormon": "Crkva Isusa Krista svetaca posljednjih dana",
+    "anglican": "anglikanska",
     "jehovahs_witness": "Jehovini svjedoci",
     "sunni": "sunitska",
     "jewish": "židovska",
@@ -92,7 +100,26 @@ DENOMINATION_HR = {
 }
 
 _ORTHODOX = {"serbian_orthodox", "orthodox", "eastern_orthodox", "macedonian_orthodox",
-             "russian_orthodox", "bulgarian_orthodox", "romanian_orthodox"}
+             "russian_orthodox", "bulgarian_orthodox", "romanian_orthodox",
+             "greek_orthodox"}
+
+# `building=mosque|synagogue` opisuje ZGRADU, a zgrada zna nadživjeti
+# namjenu: crkva Svih Svetih u Đakovu je bivša džamija (OSM: building=mosque,
+# denomination=roman_catholic), pentekostna crkva Radosne vijesti u Osijeku
+# stoji u bivšoj sinagogi. Kad tag proturječi kršćanskom nazivu, religiji ili
+# konfesiji, tag se preskače. Izmjereno na OSM kešu 2026-11-20: nijedna od
+# 20 džamija ni 11 sinagoga nema takav proturječan signal.
+_RELIGIOUS_BUILDINGS = {"mosque", "synagogue"}
+_CHRISTIAN_NAME = re.compile(r"\bcrkv|\bkapel", re.I)
+
+
+def _christian_evidence(tags: dict, name: str | None) -> bool:
+    if normalize_religion(tags.get("religion")) == "christian":
+        return True
+    denom = normalize_denomination(tags.get("denomination"))
+    if denom and denom not in {"sunni", "shia", "zen"}:
+        return True
+    return bool(name and _CHRISTIAN_NAME.search(name))
 
 
 def classify(tags: dict | None = None, name: str | None = None) -> str:
@@ -104,6 +131,11 @@ def classify(tags: dict | None = None, name: str | None = None) -> str:
         return _CHURCH_TYPE_MAP[ct]
 
     b = (tags.get("building") or "").lower()
+    if b in _RELIGIOUS_BUILDINGS and _christian_evidence(tags, name):
+        b = ""
+    # Konfesija normalizirana istom funkcijom kao u ingestu, pa
+    # `serbian_orthodox;orthodox` i `eastern_orthodox` prepoznaju pravoslavlje.
+    denom = normalize_denomination(tags.get("denomination")) or ""
     if b in _BUILDING_MAP:
         # `building=church` je pregenerički da nadjača naziv "Katedrala …";
         # naziv provjeravamo prvi za crkvu/hram, tag za sve ostalo.
@@ -117,19 +149,17 @@ def classify(tags: dict | None = None, name: str | None = None) -> str:
         for kind, pat in _NAME_PATTERNS:
             if pat.search(name):
                 if kind == "crkva":
-                    denom = (tags.get("denomination") or "").lower()
                     if denom in _ORTHODOX:
                         return "pravoslavna-crkva"
                 return kind
 
-    denom = (tags.get("denomination") or "").lower()
     if denom in _ORTHODOX:
         return "pravoslavna-crkva"
 
     if b in _BUILDING_MAP:
         return _BUILDING_MAP[b]
 
-    rel = (tags.get("religion") or "").lower()
+    rel = normalize_religion(tags.get("religion"))
     if rel == "muslim":
         return "dzamija"
     if rel == "jewish":
@@ -142,9 +172,10 @@ def classify(tags: dict | None = None, name: str | None = None) -> str:
 
 def religion_of(tags: dict | None = None, kind: str | None = None) -> str | None:
     tags = tags or {}
-    rel = (tags.get("religion") or "").strip().lower()
-    if rel:
-        return rel
+    # Tag postoji → normaliziran ili None (`bogomilism`). Ne pada na kind:
+    # nepoznata religija iz izvora nije dokaz kršćanstva.
+    if (tags.get("religion") or "").strip():
+        return normalize_religion(tags["religion"])
     if kind == "dzamija":
         return "muslim"
     if kind == "sinagoga":

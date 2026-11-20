@@ -31,6 +31,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from src import geo_hr, kinds, titular  # noqa: E402
+from src.denomination import normalize_denomination  # noqa: E402
 from src.db import add_alias, connect, merge_source  # noqa: E402
 from src.normalize import slugify  # noqa: E402
 from src.overpass import latlng, query  # noqa: E402
@@ -71,8 +72,12 @@ def run() -> None:
             lat, lng = coords
 
             kind = kinds.classify(t, name)
+            # Oboje normalizirano na dozvoljeni skup (odluka 101) PRIJE upisa:
+            # kasniji izvori pišu kroz COALESCE i ne bi ispravili smeće.
             religion = kinds.religion_of(t, kind)
-            denomination = (t.get("denomination") or "").strip().lower() or None
+            denomination = normalize_denomination(t.get("denomination"), religion)
+            if t.get("denomination") and denomination is None:
+                stats["konfesija_odbacena"] += 1
 
             if not name:
                 # Bezimeni objekti su stvarni (kapelice uz put) — imenuj ih po

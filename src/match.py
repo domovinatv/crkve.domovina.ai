@@ -20,15 +20,20 @@ Strategija (svjesno konzervativna — lažni match je gori od nedostajućeg):
   3. rapidfuzz token_set_ratio na normaliziranom nazivu, uz prag.
   4. Ako više kandidata prijeđe prag, traži jasnog pobjednika (margina);
      inače ne matchaj — dvosmislenost ostaje nespojena i vidi se u statistici.
+
+Za župe (scripts/11) prije svega toga ide 0. KONFESIJA (`compatible`,
+odluka 4): kandidat koji pravna osoba ne smije dobiti uopće ne ulazi u
+bazen, pa ne može ni pobijediti ni pokvariti marginu ispravnom kandidatu.
 """
 from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import Iterable, Sequence
+from typing import Any, Callable, Iterable, Sequence
 
 from rapidfuzz import fuzz
 
+from .denomination import is_katolicka, is_nekatolicka
 from .kinds import classify
 from .normalize import norm_key, strip_diacritics
 from .titular import head_key, key as titular_key
@@ -77,6 +82,8 @@ class Candidate:
     tkey: str | None = None
     hkey: str | None = None
     kind: str | None = None
+    religion: str | None = None
+    denomination: str | None = None
 
     @classmethod
     def from_row(cls, row) -> "Candidate":
@@ -91,7 +98,45 @@ class Candidate:
             hkey=head_key(name),
             # `kind` iz baze ako postoji (OSM tagovi su pouzdaniji), inače iz naziva.
             kind=(row["kind"] if "kind" in cols and row["kind"] else classify({}, name)),
+            religion=row["religion"] if "religion" in cols else None,
+            denomination=row["denomination"] if "denomination" in cols else None,
         )
+
+
+_KATOLICKA_EVIDENCIJA = "datagovhr:katolicke-pravne-osobe"
+
+
+def _field(obj: Any, key: str) -> Any:
+    """Isto čitanje za sqlite3.Row, dict i Candidate."""
+    if hasattr(obj, "keys"):
+        return obj[key] if key in obj.keys() else None
+    return getattr(obj, key, None)
+
+
+def compatible(church: Any, parish: Any) -> bool:
+    """Smije li ova pravna osoba dobiti ovu građevinu? (odluka 4)
+
+    Katolička pravna osoba (konfesija rimo-/grkokatolička ili zapis iz
+    evidencije Katoličke Crkve) NE dobiva građevinu koja je sigurno
+    nekatolička — po kindu (`pravoslavna-crkva`/`dzamija`/`sinagoga`, i bez
+    `denomination`), po religiji ili po konfesiji. Kind sam nije dovoljan:
+    protestantske crkve i Jehovini svjedoci su u OSM-u `kind=crkva`.
+    Nekatolička pravna osoba NE dobiva građevinu katoličke konfesije.
+    Nepoznata konfesija ne blokira.
+
+    Definicija „nekatoličke građevine" je ista funkcija kojom audit mjeri
+    `nekatolicke_na_katolickim` (`denomination.is_nekatolicka`).
+    """
+    p_den = _field(parish, "denomination")
+    p_rel = _field(parish, "religion")
+    parish_kat = is_katolicka(p_den) or _KATOLICKA_EVIDENCIJA in (_field(parish, "source") or "")
+    church_nekat = is_nekatolicka(
+        _field(church, "kind"), _field(church, "religion"), _field(church, "denomination"))
+    if parish_kat:
+        return not church_nekat
+    if is_nekatolicka(None, p_rel, p_den):
+        return church_nekat or not is_katolicka(_field(church, "denomination"))
+    return True
 
 
 def build_index(rows: Iterable) -> dict[str, list[Candidate]]:
@@ -110,8 +155,13 @@ def best_match(
     *place_tiers: set[str],
     threshold: int = THRESHOLD,
     margin: int = MARGIN,
+    accept: Callable[[Candidate], bool] | None = None,
 ) -> tuple[Candidate, int] | None:
     """Najbolji kandidat za naziv, gledajući razine mjesta redom.
+
+    `accept` je tvrdi filtar koji se primjenjuje na bazen PRIJE ocjenjivanja
+    (scripts/11: `lambda c: compatible(c, župa)`). Razina čiji su svi
+    kandidati odbijeni ponaša se kao prazna — gleda se šira.
 
     `place_tiers` idu od najpreciznije (naselje) prema najširoj (općina).
     Prva razina koja uopće ima kandidata je i jedina koja se ocjenjuje — širi
@@ -127,7 +177,8 @@ def best_match(
         pool: dict[int, Candidate] = {}
         for p in places:
             for c in index.get(p, []):
-                pool[c.id] = c
+                if accept is None or accept(c):
+                    pool[c.id] = c
         if not pool:
             continue
         hit = _score(pool, name, threshold, margin)

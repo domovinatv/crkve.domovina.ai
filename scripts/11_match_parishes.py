@@ -20,6 +20,15 @@ Soline, dvije Sesvete. Bez provjere udaljenosti crkve istarskog Lupoglava
 završe na zagrebačkoj župi 180 km daleko. Zato: čim župa ima koordinate,
 kandidat mora biti unutar `parish_geo.MAX_FILIJALA_KM`.
 
+Konfesija (odluka 4, `match.compatible`) je tvrdi uvjet u oba prolaza.
+U 1. prolazu ide PRIJE scoreanja: nekompatibilna građevina ne ulazi u
+bazen, pa ne može ni pobijediti ni srušiti marginu ispravnom kandidatu.
+U 2. prolazu samo ODBIJA: jedinstvenost se i dalje broji nad svim pravnim
+osobama u mjestu. Izmjereno 2026-11-20: filtriranje prije brojanja dodalo
+je 190 filijala, među njima sinagoge, džamije i Jehovine svjedoke na
+srpskopravoslavne crkvene općine (pravilo štiti samo katoličku granicu), a
+to je pitanje spajanja nekatoličkih zajednica, ne ovog pravila.
+
   uv run python scripts/11_match_parishes.py [--dry-run]
 """
 from __future__ import annotations
@@ -34,7 +43,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from src.db import connect  # noqa: E402
-from src.match import best_match, build_index, place_key  # noqa: E402
+from src.match import best_match, build_index, compatible, place_key  # noqa: E402
 from src.parish_geo import MAX_FILIJALA_KM, km  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -63,7 +72,8 @@ def run(dry_run: bool = False) -> None:
             conn.execute("UPDATE churches SET parish_id = NULL, is_parish_church = 0")
 
         churches = conn.execute(
-            "SELECT id, name, kind, city, settlement, municipality, lat, lng FROM churches"
+            "SELECT id, name, kind, religion, denomination, city, settlement, "
+            "municipality, lat, lng FROM churches"
         ).fetchall()
         index = build_index(churches)
         pos = {c["id"]: (c["lat"], c["lng"]) for c in churches}
@@ -89,7 +99,8 @@ def run(dry_run: bool = False) -> None:
             # usporedbu: "ŽUPA SV. JURJA, LOVRAN"; match.py skida tipski
             # prefiks i mjesto iza zareza sam.
             places = place_key(p["city"])
-            hit = best_match(index, p["name"], places)
+            hit = best_match(index, p["name"], places,
+                             accept=lambda c, p=p: compatible(c, p))
             if not hit:
                 stats["nespojeno"] += 1
                 if places:
@@ -133,6 +144,7 @@ def run(dry_run: bool = False) -> None:
             for pl in places:
                 by_place.setdefault(pl, set()).add(pid)
 
+        parish_by_id = {p["id"]: p for p in parishes}
         for c in churches:
             if c["id"] in taken:
                 continue
@@ -143,6 +155,9 @@ def run(dry_run: bool = False) -> None:
                 stats["filijala_dvosmislena" if cand_parishes else "filijala_bez_zupe"] += 1
                 continue
             pid = next(iter(cand_parishes))
+            if not compatible(c, parish_by_id[pid]):
+                stats["filijala_nekompatibilna"] += 1
+                continue
             if _too_far(seat.get(pid), (c["lat"], c["lng"])):
                 stats["filijala_predaleko"] += 1
                 continue

@@ -24,6 +24,15 @@ from collections.abc import Callable
 from pathlib import Path
 
 from . import stats
+from .denomination import (  # noqa: F401 — re-eksport, vidi „Konfesija" niže
+    DOZVOLJENE_DENOMINACIJE,
+    DOZVOLJENE_RELIGIJE,
+    KATOLICKE,
+    NEKATOLICKE_DENOMINACIJE,
+    NEKATOLICKI_KINDOVI,
+    NEKRSCANSKE_RELIGIJE,
+    is_nekatolicka,
+)
 from .normalize import norm_key
 from .titular import _EPITHETS, _KNOWN_NOM, head_key
 
@@ -33,77 +42,9 @@ ROOT = Path(__file__).resolve().parent.parent
 # Konfesija
 # ---------------------------------------------------------------------------
 
-# Pravna osoba je „katolička" ako joj je konfesija jedna od ovih. Evidencija
-# Katoličke Crkve upisuje sve (i Križevačku eparhiju) kao `roman_catholic`;
-# `greek_catholic` je tu da pravilo vrijedi i kad se eparhija razdvoji.
-KATOLICKE = frozenset({"roman_catholic", "greek_catholic"})
-
-# Dozvoljene vrijednosti `denomination` — OSM wiki konvencija (Key:denomination),
-# suženo na ono što u Hrvatskoj postoji. Isti skup vrijedi za `churches`,
-# `parishes` i `dioceses`, jer matcher uspoređuje konfesiju građevine s
-# konfesijom pravne osobe pa obje strane moraju govoriti istim rječnikom.
-#   - `catholic` NIJE dozvoljen: OSM ga smatra dvosmislenim, ovdje je uvijek
-#     rimokatolička (1022 zapisa, sve u katoličkim krajevima).
-#   - `orthodox` JEST dozvoljen: OSM-ova generička vrijednost kad konkretna
-#     crkva nije poznata. U `serbian_orthodox` se smije dići samo dokazivo.
-#   - adventisti su `seventh_day_adventist` (OSM wiki), ne `adventist`:
-#     Kršćanska adventistička crkva u RH je crkva adventista sedmog dana.
-#   - Religija nije konfesija: `jewish`, `hindu`, `buddhist` kao `denomination`
-#     su naš propust iz ingesta zajednica, ne vrijednost.
-DOZVOLJENE_DENOMINACIJE = frozenset({
-    # katoličke
-    "roman_catholic", "greek_catholic", "old_catholic",
-    # pravoslavne
-    "orthodox", "serbian_orthodox", "macedonian_orthodox", "bulgarian_orthodox",
-    "russian_orthodox", "greek_orthodox", "romanian_orthodox",
-    # protestantske i ostale kršćanske
-    "protestant", "lutheran", "reformed", "evangelical", "baptist", "pentecostal",
-    "seventh_day_adventist", "methodist", "anglican", "waldensian",
-    "jehovahs_witness", "mormon", "new_apostolic",
-    # islam
-    "sunni", "shia",
-    # budizam
-    "zen",
-})
-
-DOZVOLJENE_RELIGIJE = frozenset({
-    "christian", "muslim", "jewish", "buddhist", "hindu", "pagan",
-})
-
-# Konfesije koje NISU katoličke — eksplicitno nabrojano, ne „sve osim
-# katoličkih": nepoznata vrijednost (`krščanstvo1`, `sv. florijan`, NULL)
-# nije dokaz da građevina nije katolička. Uz dozvoljene su i poznati
-# nenormalizirani sinonimi (`adventist`, `hungarian_reformed`…) — oni su
-# nedvosmisleno nekatolički i prije nego ih S2 normalizira.
-NEKATOLICKE_DENOMINACIJE = frozenset({
-    "old_catholic",
-    "orthodox", "serbian_orthodox", "macedonian_orthodox", "bulgarian_orthodox",
-    "russian_orthodox", "greek_orthodox", "romanian_orthodox", "eastern_orthodox",
-    "protestant", "lutheran", "reformed", "hungarian_reformed", "united_reformed",
-    "calvinist", "evangelical", "baptist", "pentecostal", "neo-pentecostal",
-    "philadelphian", "seventh_day_adventist", "adventist", "methodist", "anglican",
-    "episcopal", "waldensian", "church_of_christ", "jehovahs_witness", "mormon",
-    "new_apostolic",
-    "sunni", "shia", "zen", "hare_krishna",
-})
-NEKRSCANSKE_RELIGIJE = frozenset({"muslim", "jewish", "buddhist", "hindu", "pagan"})
-NEKATOLICKI_KINDOVI = frozenset({"pravoslavna-crkva", "dzamija", "sinagoga"})
-
-
-def _denom_parts(denom: str | None) -> list[str]:
-    """OSM višestruka vrijednost `serbian_orthodox;orthodox` → dijelovi."""
-    if not denom:
-        return []
-    return [p.strip().lower() for p in denom.split(";") if p.strip()]
-
-
-def is_nekatolicka(kind: str | None, religion: str | None, denom: str | None) -> bool:
-    """Je li građevina sigurno nekatolička: po tipu, religiji ILI konfesiji."""
-    if kind in NEKATOLICKI_KINDOVI:
-        return True
-    if (religion or "").strip().lower() in NEKRSCANSKE_RELIGIJE:
-        return True
-    return any(p in NEKATOLICKE_DENOMINACIJE for p in _denom_parts(denom))
+# Konstante i pravilo žive u src/denomination.py — matcher (src/match.py)
+# i ingest koriste iste, inače se mjera i pravilo raziđu. Ovdje se samo
+# re-eksportiraju jer ih testovi i stariji kod traže kao `audit.X`.
 
 
 # ---------------------------------------------------------------------------
