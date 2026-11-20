@@ -42,7 +42,21 @@ from shapely.ops import polygonize, unary_union
 logger = logging.getLogger(__name__)
 
 # Grkokatolička eparhija — preklapa se s latinskim biskupijama, ne particionira.
+# Od S3 je i `kind='eparhija'`, pa je `scripts/20` (DIOCESE_SQL bira samo
+# nadbiskupija/biskupija) ionako ne uzima; ovaj skup ostaje kao druga brava.
 OVERLAPPING_SLUGS = {"krizevacka-eparhija"}
+
+
+def kind_of(name: str) -> str:
+    """`dioceses.kind` za naziv iz evidencije Katoličke Crkve.
+
+    Evidencija vodi Križevačku eparhiju u istom stupcu kao latinske
+    biskupije (`BISKUPIJA_NADBISKUPIJA`); do S3 je zato bila `biskupija`.
+    """
+    low = (name or "").lower()
+    if "eparhij" in low:
+        return "eparhija"
+    return "nadbiskupija" if "nadbiskupija" in low else "biskupija"
 
 # Tolerancija pojednostavljenja u stupnjevima. Na 45°N je 0,0008° ≈ 65 m —
 # ispod razlučivosti na kojoj se granica biskupije uopće gleda, a datoteku

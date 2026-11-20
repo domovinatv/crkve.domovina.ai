@@ -118,3 +118,15 @@ def test_to_geojson_geometry_zaokruzuje_na_6_decimala():
     g = dio._geom([[[[0, 0], [1.123456789, 0], [1, 1], [0, 0]]]])
     assert "1.123457" in dio.to_geojson_geometry(g)
     assert "1.123456789" not in dio.to_geojson_geometry(g)
+
+
+@pytest.mark.parametrize("name,kind", [
+    ("Križevačka Eparhija", "eparhija"),
+    ("KRIŽEVAČKA EPARHIJA", "eparhija"),
+    ("Zagrebačka Nadbiskupija", "nadbiskupija"),
+    ("Biskupija Krk", "biskupija"),
+    ("Dubrovačka Biskupija - Dioecesis Ragusina", "biskupija"),
+])
+def test_kind_of_eparhija_nije_biskupija(name, kind):
+    """S3: evidencija vodi grkokatoličku eparhiju u stupcu biskupija."""
+    assert dio.kind_of(name) == kind

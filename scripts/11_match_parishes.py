@@ -60,6 +60,13 @@ log = logging.getLogger("match-zupe")
 # Vrste pravnih osoba koje uopće mogu imati "svoju" crkvu.
 PARISH_KINDS = ("zupa", "svetiste", "samostan", "parohija", "crkvena-opcina", "dzemat")
 
+# Pravoslavni manastiri su do S3 bili `kind=eparhija` i zato izvan spajanja.
+# Ispravna vrsta (`samostan`, src/kinds.org_kind) ne smije ih usput uvesti u
+# matcher: spajanje pravoslavnih pravnih osoba je zasebna stavka (odluka 206),
+# a izmjereno je da bi 2. prolaz u Gračacu oduzeo 5 katoličkih filijala
+# (odluka 305). Filtar pada kad se ta stavka uzme.
+_IZVAN_SPAJANJA = "NOT (kind = 'samostan' AND denomination LIKE '%orthodox')"
+
 
 def _too_far(seat: tuple | None, church: tuple | None) -> bool:
     """Je li crkva izvan dosega te župe? Bez koordinata — nema tvrdnje."""
@@ -89,6 +96,7 @@ def run(dry_run: bool = False) -> None:
         placeholders = ", ".join("?" * len(PARISH_KINDS))
         parishes = conn.execute(
             f"SELECT * FROM parishes WHERE kind IN ({placeholders}) "
+            f"AND {_IZVAN_SPAJANJA} "
             "AND (registry_status IS NULL OR registry_status LIKE 'AKTIV%') "
             "AND duplicate_of IS NULL",
             PARISH_KINDS,

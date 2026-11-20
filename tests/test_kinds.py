@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from src.kinds import classify, denomination_hr, religion_of
+from src.kinds import classify, denomination_hr, org_kind, religion_of
 
 
 @pytest.mark.parametrize(
@@ -69,3 +69,26 @@ def test_denomination_hr():
     # Nepoznato se propušta čitljivo, ne baca.
     assert denomination_hr("some_new_thing") == "some new thing"
     assert denomination_hr(None) is None
+
+
+# --- vrsta pravne osobe iz evidencije vjerskih zajednica (scripts/03) --------
+
+@pytest.mark.parametrize("name,kind", [
+    # S2 nalaz: 20 manastira je bilo `eparhija` jer naziv počinje eparhijom.
+    ("SRPSKA PRAVOSLAVNA CRKVA U HRVATSKOJ, EPARHIJA SLAVONSKA, PRAVOSLAVNI MANASTIR PAKRA",
+     "samostan"),
+    ("SRPSKA PRAVOSLAVNA CRKVA U HRVATSKOJ, EPARHIJA GORNJOKARLOVAČKA, "
+     "MANASTIR PREOBRAŽENJA GOSPODNJEG U KOMOGOVINI", "samostan"),
+    # Eparhija sama i njezin upravni odbor ostaju eparhija.
+    ("SRPSKA PRAVOSLAVNA CRKVA U HRVATSKOJ, EPARHIJA SLAVONSKA", "eparhija"),
+    ("SRPSKA PRAVOSLAVNA CRKVA U HRVATSKOJ, EPARHIJA DALMATINSKA, EPARHIJSKI UPRAVNI ODBOR",
+     "eparhija"),
+    # Crkvena općina u eparhiji ostaje crkvena općina.
+    ("SRPSKA PRAVOSLAVNA CRKVA U HRVATSKOJ, EPARHIJA OSJEČKOPOLJSKA I BARANJSKA, "
+     "CRKVENA OPĆINA BELI MANASTIR", "crkvena-opcina"),
+    # Beli Manastir je grad, ne samostan.
+    ("MJESNA CRKVA BELI MANASTIR", "ostalo"),
+    ("EVANĐEOSKA PENTEKOSTNA CRKVA, BELI MANASTIR", "ostalo"),
+])
+def test_org_kind_manastir_nije_eparhija(name, kind):
+    assert org_kind(name) == kind

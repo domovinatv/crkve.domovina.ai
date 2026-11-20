@@ -31,6 +31,7 @@ sys.path.insert(0, str(ROOT))
 from src import titular  # noqa: E402
 from src.datagovhr import KATOLICKE_PRAVNE_OSOBE, fetch, split_sjediste  # noqa: E402
 from src.db import connect, mark_duplicates, merge_source, upsert_diocese, upsert_parish  # noqa: E402
+from src.dioceses import kind_of as diocese_kind  # noqa: E402
 from src.normalize import slugify, title_case_hr  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -38,7 +39,10 @@ log = logging.getLogger("zupe-kat")
 
 _KIND_RULES: list[tuple[str, re.Pattern]] = [
     ("zupa", re.compile(r"^\s*ŽUPA\b", re.I)),
-    ("biskupija", re.compile(r"^\s*(NAD)?BISKUPIJA\b|\bNADBISKUPIJA\s*$|\bBISKUPIJA\s*$", re.I)),
+    # „KRIŽEVAČKA EPARHIJA" je pravna osoba iste razine kao biskupija (S3);
+    # „CARITAS / KNJIŽNICA KRIŽEVAČKE EPARHIJE" nisu.
+    ("biskupija", re.compile(r"^\s*(NAD)?BISKUPIJA\b|\bNADBISKUPIJA\s*$|\bBISKUPIJA\s*$"
+                             r"|\bEPARHIJA\s*$", re.I)),
     ("samostan", re.compile(r"\bSAMOSTAN|\bREZIDENCIJA\b|\bKARMEL\b|\bOPATIJA\b", re.I)),
     ("provincija", re.compile(r"\bPROVINCIJA\b|\bDRUŽBA\b|\bKUSTODIJA\b|\bRED\b", re.I)),
     ("caritas", re.compile(r"\bCARITAS\b", re.I)),
@@ -123,12 +127,11 @@ def run() -> None:
             stats["ok"] += 1
 
             if kind == "biskupija":
-                is_arch = "NADBISKUPIJA" in naziv.upper()
                 upsert_diocese(
                     conn,
                     slugify(naziv),
                     title_case_hr(naziv),
-                    kind="nadbiskupija" if is_arch else "biskupija",
+                    kind=diocese_kind(naziv),
                     religion="christian",
                     denomination="roman_catholic",
                     oib=oib,
@@ -150,7 +153,7 @@ def run() -> None:
                 conn,
                 slugify(d),
                 d,
-                kind="nadbiskupija" if "nadbiskupija" in d.lower() else "biskupija",
+                kind=diocese_kind(d),
                 religion="christian",
                 denomination="roman_catholic",
                 parish_count=row["n"],

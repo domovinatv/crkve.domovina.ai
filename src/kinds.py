@@ -190,3 +190,28 @@ def denomination_hr(denom: str | None) -> str | None:
     if not denom:
         return None
     return DENOMINATION_HR.get(denom.strip().lower(), denom.strip().lower().replace("_", " "))
+
+
+# ---------------------------------------------------------------------------
+# Vrsta PRAVNE OSOBE iz evidencije vjerskih zajednica (scripts/03)
+# ---------------------------------------------------------------------------
+# Redoslijed je prioritet. Manastir ide PRIJE eparhije: SPC piše svaki svoj
+# oblik kao „SRPSKA PRAVOSLAVNA CRKVA U HRVATSKOJ, EPARHIJA X, PRAVOSLAVNI
+# MANASTIR Y", pa je pravilo za eparhiju gutalo 20 manastira (S2 nalaz).
+# „BELI MANASTIR" je grad, ne samostan (Mjesna crkva, Crkveni okrug,
+# pentekostna crkva u Belom Manastiru) — S3, 2026-11-20.
+_ORG_KIND_RULES: list[tuple[str, re.Pattern]] = [
+    ("parohija", re.compile(r"\bPAROHIJA\b|\bCRKVEN\w*\s+OPĆIN\w*\b.*PRAVOSLAV", re.I)),
+    ("dzemat", re.compile(r"\bDŽEMAT\b|\bMEDŽLIS\b|\bMEDZLIS\b", re.I)),
+    ("crkvena-opcina", re.compile(r"\bCRKVEN\w*\s+OPĆIN|\bŽUPA\b|\bZBOR\b|\bOPĆINA\b", re.I)),
+    ("samostan", re.compile(r"(?<!BELI )\bMANASTIR\b|\bSAMOSTAN\b", re.I)),
+    ("eparhija", re.compile(r"\bEPARHIJA\b|\bMITROPOLIJA\b", re.I)),
+]
+
+
+def org_kind(name: str | None) -> str:
+    """`parishes.kind` za organizacijski oblik nekatoličke vjerske zajednice."""
+    for kind, pat in _ORG_KIND_RULES:
+        if pat.search(name or ""):
+            return kind
+    return "ostalo"

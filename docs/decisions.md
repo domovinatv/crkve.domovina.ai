@@ -154,3 +154,25 @@ novom koja se poziva na staru. Blokovi: S0 1–99, S1 100–199, S2 200–299 �
    slijepljeni „Sv.” se odvaja; vokativ „Mihovile” je u leksikonu). Simulacija titulara kako bi ih
    upisao pipeline (`scratchpad/sim_gen.py` nad `baseline-s2.db`): **0** (crkve 0, pravne
    osobe 0), polazno 302. Kratice „Dj. i Mč” ostaju (nisu genitiv). Revizija: rebuild.
+305. **„MANASTIR” je `samostan`, a pravoslavni samostani se do stavke iz odluke 206 ne spajaju.**
+   Pravilo je u `src/kinds.org_kind` (bilo u `scripts/03`, netestabilno): manastir ide prije
+   eparhije, a „BELI MANASTIR” je grad. Nad `baseline-s2.db`: 19 zapisa `eparhija` → `samostan`
+   (dvadeseti, „PRAVOSLAVNA BOGOSLOVIJA … U MANASTIRU KRKA”, nije samostan i ostaje), 3 iz Belog
+   Manastira `samostan` → `ostalo` (Mjesna crkva, Crkveni okrug, pentekostna crkva; kao i njihovi
+   istovrsni zapisi drugdje). Kad bi ušli u `scripts/11`, simulacija nad kopijom baze
+   (`scratchpad/run11.py`) daje +8 točnih veza manastir ↔ manastirska crkva (Krka, Dalj, Pakra,
+   Orahovica, Marča, Lazarica, Crnogorci, Lepavina), ali i 5 izgubljenih katoličkih filijala
+   „ŽUPE SV. JURJA MČ.” u Gračacu (mjesto postane dvosmisleno) i upitne filijale Lepavine
+   („kapela Svetog Križa”, Sokolovac). Zato `scripts/11` (`_IZVAN_SPAJANJA`) isključuje
+   `samostan` pravoslavne konfesije; simulacija s filtrom: **0 promjena** veza. Posljedice
+   izvan spajanja: 19 manastira dobiva stranicu `/ustanova/<slug>`, a 3 zapisa iz Belog Manastira
+   je gube (nijedan nema spojenu građevinu; slug se ne mijenja). Revizija: stavka spajanja
+   pravoslavnih (206).
+306. **Križevačka eparhija je `dioceses.kind = 'eparhija'`** (`src/dioceses.kind_of`, oba mjesta
+   u `scripts/02`), a zapis „KRIŽEVAČKA EPARHIJA” u `parishes` je `biskupija` (pravna osoba iste
+   razine; do sada `ostalo`), pa eparhija dobiva OIB i sjedište Križevci kao i latinske
+   biskupije. Slug `krizevacka-eparhija` i naziv (= `parishes.diocese`) se ne mijenjaju.
+   `scripts/20` bira samo `nadbiskupija`/`biskupija`, pa je eparhija izvan particije i bez
+   `OVERLAPPING_SLUGS` (ostaje kao druga brava). Export `biskupije.*` nosi `kind` doslovno;
+   frontend ne filtrira po vrsti (`/biskupije` dijeli po `has_area`, `/biskupija/$slug` ispisuje
+   `kind` kao oznaku), pa samo oznaka postaje „eparhija”.

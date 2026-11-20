@@ -17,7 +17,6 @@ džamija/mesdžida, ali bez pravne osobe iza njih.
 from __future__ import annotations
 
 import logging
-import re
 import sys
 from collections import Counter
 from pathlib import Path
@@ -36,25 +35,12 @@ from src.datagovhr import (  # noqa: E402
     split_sjediste,
 )
 from src.db import connect, mark_duplicates, merge_source, upsert_diocese, upsert_parish  # noqa: E402
+# Vrsta pravne osobe: pravila u src/kinds.py (testabilna; ovaj modul se ne može importati).
+from src.kinds import org_kind  # noqa: E402
 from src.normalize import slugify, title_case_hr  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("vjerske")
-
-_ORG_KIND_RULES: list[tuple[str, re.Pattern]] = [
-    ("parohija", re.compile(r"\bPAROHIJA\b|\bCRKVEN\w*\s+OPĆIN\w*\b.*PRAVOSLAV", re.I)),
-    ("dzemat", re.compile(r"\bDŽEMAT\b|\bMEDŽLIS\b|\bMEDZLIS\b", re.I)),
-    ("crkvena-opcina", re.compile(r"\bCRKVEN\w*\s+OPĆIN|\bŽUPA\b|\bZBOR\b|\bOPĆINA\b", re.I)),
-    ("eparhija", re.compile(r"\bEPARHIJA\b|\bMITROPOLIJA\b", re.I)),
-    ("samostan", re.compile(r"\bMANASTIR\b|\bSAMOSTAN\b", re.I)),
-]
-
-
-def org_kind(name: str) -> str:
-    for kind, pat in _ORG_KIND_RULES:
-        if pat.search(name or ""):
-            return kind
-    return "ostalo"
 
 
 def run() -> None:
