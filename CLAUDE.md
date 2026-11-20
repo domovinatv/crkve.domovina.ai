@@ -79,14 +79,20 @@ piše koordinate kroz `COALESCE` (ne gazi ono što je 14 upisao).
 ## Karta (gis.domovina.ai)
 `scripts/33_sync_karta.py` prepiše `crkve.geojson`, `zupe.geojson` i
 `biskupije.geojson` u `../karta-hrvatske/apps/karta-web/public/data/`. Svaki
-sloj ondje ima hook + toggle u `src/lib/MapState.tsx` + gumb u
-`src/components/ControlsPanel.tsx` + tipove u `src/lib/types.ts`:
+sloj ondje ima hook u `src/hooks/`, stanje u `src/lib/MapState.tsx`
+(`showX`/`setShowX`), deklarativan unos u registru `src/lib/layers.ts` (gumb,
+grupa „vjera”, prečac, **ručno upisan `count`**) koji `src/hooks/useLayerControls.ts`
+veže na MapState, i tipove u `src/lib/types.ts`. `ControlsPanel.tsx` više ne
+postoji (provjereno 2026-11-20).
 
-| Gumb | Hook | Toggle | Tip |
+| Registar (`id`) | Hook (`src/hooks/`) | Stanje | Tip |
 |---|---|---|---|
-| ⛪ Crkve | `useCrkveLayer.ts` | `showCrkve` | `CrkvaProperties` |
-| 🏛 Župe | `useZupeLayer.ts` | `showZupe` | `ZupaProperties` |
-| ✝️ Biskupije | `useBiskupijeLayer.ts` | `showBiskupije` | `BiskupijaProperties` |
+| `crkve` | `useCrkveLayer.ts` | `showCrkve` | `CrkvaProperties` |
+| `zupe` | `useZupeLayer.ts` | `showZupe` | `ZupaProperties` |
+| `biskupije` | `useBiskupijeLayer.ts` | `showBiskupije` | `BiskupijaProperties` |
+
+`count` u `layers.ts` (crkve 6966, župe 2928) nije izveden iz GeoJSON-a: kad
+dedup ili ispravak promijeni broj zapisa, ispravi ga ručno uz deploy.
 
 Deploy: `cd ../karta-hrvatske/apps/karta-web && npm run deploy`.
 
