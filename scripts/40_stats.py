@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from src.db import connect  # noqa: E402
+from src.stats import scalars  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("stats")
@@ -26,51 +27,7 @@ OUT = ROOT / "data" / "exports" / "stats.json"
 
 def run() -> None:
     with connect() as conn:
-        q = lambda sql, *a: conn.execute(sql, a).fetchone()[0]  # noqa: E731
-
-        _AKTIV = ("(p.registry_status IS NULL OR p.registry_status LIKE 'AKTIV%') "
-                  "AND p.duplicate_of IS NULL")
-        stats = {
-            "crkve_ukupno": q("SELECT COUNT(*) FROM churches"),
-            "crkve_s_koordinatama": q("SELECT COUNT(*) FROM churches WHERE lat IS NOT NULL"),
-            "crkve_sa_zupanijom": q("SELECT COUNT(*) FROM churches WHERE county IS NOT NULL"),
-            "crkve_s_titularom": q("SELECT COUNT(*) FROM churches WHERE titular IS NOT NULL"),
-            "crkve_sa_zastitom": q("SELECT COUNT(*) FROM churches WHERE heritage_id IS NOT NULL"),
-            "crkve_sa_slikom": q("SELECT COUNT(*) FROM churches WHERE commons_image IS NOT NULL"),
-            "crkve_s_wikipedijom": q("SELECT COUNT(*) FROM churches WHERE wikipedia_url IS NOT NULL"),
-            "crkve_sa_zupom": q("SELECT COUNT(*) FROM churches WHERE parish_id IS NOT NULL"),
-            "zupne_crkve": q("SELECT COUNT(*) FROM churches WHERE is_parish_church = 1"),
-            "crkve_s_tlocrtom": q("SELECT COUNT(*) FROM churches WHERE geom_kind IN ('way','relation')"),
-            "crkve_lokacija_potvrdjena": q("SELECT COUNT(*) FROM churches WHERE geo_verified = 1"),
-            "geo_konflikti": q("SELECT COUNT(*) FROM geo_conflicts"),
-            "pravne_osobe_ukupno": q("SELECT COUNT(*) FROM parishes"),
-            "zupe_katolicke": q("SELECT COUNT(*) FROM parishes WHERE kind = 'zupa'"),
-            # 1563 je koliko ZAPISA evidencija ima; jedan je ugašen
-            # (PRESTANAK), jedan je isti subjekt upisan dvaput (Prgomet).
-            "zupe_aktivne": q(
-                "SELECT COUNT(*) FROM parishes p WHERE p.kind = 'zupa' AND " + _AKTIV
-            ),
-            "zupe_s_koordinatama": q("SELECT COUNT(*) FROM parishes WHERE lat IS NOT NULL"),
-            "zupe_s_oib": q("SELECT COUNT(*) FROM parishes WHERE oib IS NOT NULL"),
-            "zupe_s_telefonom": q("SELECT COUNT(*) FROM parishes WHERE phone IS NOT NULL"),
-            "zupe_s_webom": q("SELECT COUNT(*) FROM parishes WHERE website IS NOT NULL"),
-            # Dvije različite rupe, ne jedna: župa može imati spojene filijale
-            # a ne i vlastitu župnu crkvu. Brojka 1563 − zupne_crkve je kriva
-            # jer 77 župnih crkava pripada pravnim osobama koje nisu `zupa`
-            # (samostani, svetišta).
-            "zupe_bez_zupne_crkve": q(
-                "SELECT COUNT(*) FROM parishes p WHERE p.kind = 'zupa' AND " + _AKTIV +
-                " AND NOT EXISTS("
-                " SELECT 1 FROM churches c WHERE c.parish_id = p.id AND c.is_parish_church = 1)"
-            ),
-            "zupe_bez_ijedne_crkve": q(
-                "SELECT COUNT(*) FROM parishes p WHERE p.kind = 'zupa' AND " + _AKTIV +
-                " AND NOT EXISTS("
-                " SELECT 1 FROM churches c WHERE c.parish_id = p.id)"
-            ),
-            "biskupije_i_zajednice": q("SELECT COUNT(*) FROM dioceses"),
-            "bastina_nespojena": q("SELECT COUNT(*) FROM heritage_unmatched"),
-        }
+        stats = scalars(conn)
 
         stats["zupe_po_izvoru_koordinata"] = {
             (r["geocode_source"] or "?"): r["n"] for r in conn.execute(

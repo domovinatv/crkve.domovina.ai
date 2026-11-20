@@ -1,7 +1,7 @@
 # crkve.domovina.ai — orkestracija pipelinea. `make help` za popis.
 # `make all` radi bez ijednog API ključa; ključ treba samo `make places`.
 
-.PHONY: help init ingest match fix-locations derive export export-web stats all sync-karta places test clean-cache
+.PHONY: help init ingest match fix-locations derive export export-web stats audit all sync-karta places test clean-cache
 
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
@@ -48,6 +48,9 @@ export-web: ## statički JSON za frontend/ (traži prethodni `make stats`)
 
 stats: ## izvještaj o pokrivenosti (+ data/exports/stats.json)
 	uv run python scripts/40_stats.py
+
+audit: ## metrike grešaka u podacima (+ data/exports/audit.json); ARGS="--db … --out …"
+	uv run python scripts/41_audit.py $(ARGS)
 
 all: init ingest match derive export sync-karta stats export-web ## cijeli pipeline od nule (bez ključeva)
 

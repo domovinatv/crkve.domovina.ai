@@ -76,6 +76,12 @@ ranija korekcija bila pregažena. 11 se ponavlja jer premještena župa mijenja
 skup svojih crkava; smije se ponavljati jer resetira `parish_id` na početku i
 piše koordinate kroz `COALESCE` (ne gazi ono što je 14 upisao).
 
+`make stats` mjeri POKRIVENOST, `make audit` (`scripts/41_audit.py`, logika u
+`src/audit.py`) GREŠKE — metrike lanca S1–S7, svaka s popisom primjera.
+Kontekstne brojke dijele isti SQL (`src/stats.py`). Audit bazu otvara samo za
+čitanje, a izlaz nema vremena pa je sha reproducibilan; za kopiju baze
+`make audit ARGS="--db … --out …"`.
+
 ## Karta (gis.domovina.ai)
 `scripts/33_sync_karta.py` prepiše `crkve.geojson`, `zupe.geojson` i
 `biskupije.geojson` u `../karta-hrvatske/apps/karta-web/public/data/`. Svaki
