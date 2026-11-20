@@ -278,6 +278,12 @@ s assetima na Workeru: **`docs/2026-08-28-frontend-tanstack.md`**. Ako mijenjaš
 matcher, Places validaciju ili derivaciju granica, pročitaj to prije nego
 "popraviš" nešto što je namjerno.
 
+## Potrošači podataka izvan karte
+`/Users/ms/git/domovinatv/listici.domovina.ai` (župni listići, od 2026-11-20)
+uvozi župe iz `frontend/public/data/zupe-index.json` i `zupa/<slug>.json` na
+crkve.domovina.ai. **Slug župe je njegov ključ**: promjena formata sluga župe lomi
+listiće. Telefon/web/Places koordinate namjerno ne preuzima.
+
 ## Lanac sesija: kvaliteta podataka (od 2026-11-20)
 Audit 2026-11-20 je otvorio lanac S1–S7: `TODO.md`, `docs/plan.md`,
 `docs/decisions.md`, `docs/handoffs/`. „Nastavi kvalitetu podataka” (ili „nastavi

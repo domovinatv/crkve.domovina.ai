@@ -33,7 +33,7 @@ Legenda: `[x]` gotovo · `[ ]` otvoreno · `[~]` u radu · `(!)` traži korisnik
 ## F2 — koordinate bez Googlea
 
 - [ ] `src/dgu.py` (iz `../oou.domovina.ai/src/dgu.py`) + korak koji geokodira adrese župa; `geocode_source='dgu'` → S5
-- [ ] Places ostaje samo interna provjera: `lat/lng` i `google_maps_uri` iz Placesa ne izlaze ni u jedan export; `audit.places_koordinate_u_exportu = 0` → S5
+- [ ] Places ostaje samo interna provjera: `lat/lng` i `google_maps_uri` iz Placesa ne izlaze ni u jedan export; `audit.places_koordinate_u_exportu = 0`; isto za `phone` i `website` iz Placesa → S5
 - [ ] Izmjereno: DGU vs Places na istim župama (medijan, p90 udaljenosti, udio pogodaka) → S5
 - [ ] karta-web i frontend prilagođeni promjenama svojstava (tipovi, popup „izvor koordinata”) → S5
 
