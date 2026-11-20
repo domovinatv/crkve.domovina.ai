@@ -27,7 +27,7 @@ nema, pa `bun run dev` prije prvog `make export-web` daje prazne stranice.
 | -------------------------------------------------------------- | ------------------------------------------------------- |
 | `crkve-index.json`                                             | 6966 slim zapisa — karta i pretraga                     |
 | `zupe-index.json`                                              | pravne osobe koje imaju stranicu                        |
-| `crkva/<slug>.json`                                            | detalj građevine                                        |
+| `crkva/<slug>.json`                                            | detalj građevine; `{"redirect"}` za spojeni OSM čvor → 301 |
 | `zupa/<slug>.json`, `ustanova/<slug>.json`                     | detalj pravne osobe                                     |
 | `biskupija/<slug>.json`, `biskupije.json`, `biskupije.geojson` | biskupije                                               |
 | `stats.json`                                                   | mjera iz `scripts/40` — **brojke se NE računaju ovdje** |

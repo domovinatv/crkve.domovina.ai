@@ -5,7 +5,8 @@ baze, bez bindinga, bez ključa. Deploy je onda samo `build + wrangler deploy`.
 
 Dvije jedinice stranice, jer su i u bazi dva različita skupa (vidi CLAUDE.md):
 
-    crkva/<slug>.json      GRAĐEVINA (6966) — koordinate, titular, zaštita, slika
+    crkva/<slug>.json      GRAĐEVINA (6966) — koordinate, titular, zaštita, slika;
+                           za slug spojenog OSM čvora samo {"redirect": novi slug}
     zupa/<slug>.json       KATOLIČKA ŽUPA (aktivna, nedvostruka)
     ustanova/<slug>.json   ostale mjesne pravne osobe — samostan, crkvena
                            općina, svetište, parohija, džemat
@@ -129,6 +130,13 @@ ORDER BY d.name
 # Helperi
 # ---------------------------------------------------------------------------
 
+MERGED_SQL = """
+SELECT m.slug AS old_slug, c.slug AS new_slug
+FROM church_merged m JOIN churches c ON c.id = m.church_id
+ORDER BY m.slug
+"""
+
+
 def _clean(row, drop=()) -> dict:
     """Row → dict bez praznih polja i bez nula koje znače „nema"."""
     out = {}
@@ -248,7 +256,21 @@ def export_churches(conn, parish_route: dict[int, tuple[str, str]]) -> tuple[lis
             item["is_parish_church"] = 1
         index.append(item)
 
-    stale = _purge_stale("crkva", {r["slug"] for r in rows})
+    # Slug OSM čvora spojenog u tlocrt iste zgrade (src/dedup.py, odluka 404):
+    # datoteka nosi samo novi slug, a ruta vraća 301. Nije u indeksu, pa ni u
+    # sitemapu — tražilica treba vidjeti samo preživjeli URL.
+    live = {r["slug"] for r in rows}
+    aliases = 0
+    for a in conn.execute(MERGED_SQL):
+        if a["old_slug"] in live:
+            continue
+        _write(OUT_DIR / "crkva" / f"{a['old_slug']}.json", {"redirect": a["new_slug"]})
+        live.add(a["old_slug"])
+        aliases += 1
+    if aliases:
+        log.info("crkva/: %d preusmjerenja starih slugova (church_merged)", aliases)
+
+    stale = _purge_stale("crkva", live)
     if stale:
         log.info("crkva/: obrisano %d zaostalih datoteka", stale)
 

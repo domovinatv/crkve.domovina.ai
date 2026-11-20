@@ -55,8 +55,15 @@ export const loadChurchIndex = () => loadJson<IndexFile<ChurchIndexItem>>("/data
 export const loadParishIndex = () => loadJson<IndexFile<ParishIndexItem>>("/data/zupe-index.json");
 export const loadDioceseIndex = () => loadJson<IndexFile<Diocese>>("/data/biskupije.json");
 
+/**
+ * Slug OSM čvora koji je spojen u tlocrt iste zgrade (`src/dedup.py`) ostaje
+ * kao datoteka sa samo novim slugom, da stari URL ne da 404. Ruta ga pretvara
+ * u 301.
+ */
+export type ChurchRedirect = { redirect: string };
+
 export const loadChurch = (slug: string) =>
-  loadJson<Church>(`/data/crkva/${encodeURIComponent(slug)}.json`);
+  loadJson<Church | ChurchRedirect>(`/data/crkva/${encodeURIComponent(slug)}.json`);
 export const loadParish = (route: "zupa" | "ustanova", slug: string) =>
   loadJson<Parish>(`/data/${route}/${encodeURIComponent(slug)}.json`);
 export const loadDiocese = (slug: string) =>

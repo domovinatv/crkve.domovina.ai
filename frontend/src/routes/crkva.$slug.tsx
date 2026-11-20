@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 
 import { loadChurch } from "@/lib/data";
 import { breadcrumbLd, pageHead, placeOfWorshipLd } from "@/lib/seo";
@@ -25,7 +25,14 @@ function description(c: Church): string {
 }
 
 export const Route = createFileRoute("/crkva/$slug")({
-  loader: ({ params }) => loadChurch(params.slug),
+  loader: async ({ params }) => {
+    const c = await loadChurch(params.slug);
+    // Stari slug spojenog OSM čvora → trajno preusmjerenje na preživjeli zapis.
+    if ("redirect" in c) {
+      throw redirect({ to: "/crkva/$slug", params: { slug: c.redirect }, statusCode: 301 });
+    }
+    return c;
+  },
   head: ({ loaderData }) => {
     const c = loaderData;
     if (!c) return {};
