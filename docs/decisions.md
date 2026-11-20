@@ -265,3 +265,11 @@ novom koja se poziva na staru. Blokovi: S0 1–99, S1 100–199, S2 200–299 �
    Čabar Q138496303 i ostala 3 S3 spoja ostaju (oni idu po tagu ili na građevinu bez Q).
    Pravilo (b) „generički titular nije slaganje” izmjereno i odbačeno: −22 spoja, gubi točne
    Čabar i Križevci („Majke Božje Koruške”). Revizija: S4 (dedup).
+   **POVUČENA u S3 (kod vraćen).** Rebuild S3c (`docs/research/2026-11-20-s3-rebuild.md`,
+   commit 71d0a1b) dao je, uz ispravljenu Knežiju i 4 ispravno zasebne građevine, 3 regresije
+   baštine (Z-4687 Split sv. Frane, Z-1405 Trogir sv. Ivan Krstitelj, Z-1458 Sveta Nedelja sv.
+   Rok, svaka zbog novog Wikidata duplikata na 0,00 km), krivu župnu crkvu (Čakovec q113964584
+   s koordinatama u Varaždinu → župna crkva franjevačkog samostana Varaždin) i regresiju Marije
+   Bistrice (Q107013115 na „Kapela”, bazilika gubi sliku). To su duplikati, a njih rješava S4;
+   pravilo se uzima tamo zajedno s dedupom i mjeri na istom rebuildu. Do tada Knežija
+   (Q133733258) ostaje stopljena — poznata regresija S3, prva stavka S4.

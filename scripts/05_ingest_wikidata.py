@@ -25,7 +25,6 @@ sys.path.insert(0, str(ROOT))
 
 from src import geo_hr, kinds, titular, wikidata  # noqa: E402
 from src.db import connect, merge_source  # noqa: E402
-from src.match import GENERIC_TITULARS  # noqa: E402
 from src.normalize import hrvatski_naziv, slugify, wiki_title  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -75,13 +74,12 @@ def run() -> None:
         }
         # Prostorni indeks: koordinate svih građevina, grubo blokirane po
         # 0.01° ćeliji (~1.1 km) da izbjegnemo O(n·m) usporedbu.
-        grid: dict[tuple[int, int], list[tuple]] = {}
+        grid: dict[tuple[int, int], list[tuple[int, float, float, str | None]]] = {}
         for r in conn.execute(
-            "SELECT id, lat, lng, titular, wikidata_id FROM churches WHERE lat IS NOT NULL"
+            "SELECT id, lat, lng, titular FROM churches WHERE lat IS NOT NULL"
         ).fetchall():
             cell = (int(r["lat"] * 100), int(r["lng"] * 100))
-            grid.setdefault(cell, []).append(
-                (r["id"], r["lat"], r["lng"], r["titular"], r["wikidata_id"]))
+            grid.setdefault(cell, []).append((r["id"], r["lat"], r["lng"], r["titular"]))
 
         for q, r in by_item.items():
             coord = wikidata.parse_point(r.get("coord"))
@@ -106,7 +104,7 @@ def run() -> None:
             if church_id:
                 stats["spojeno_po_wikidata_tagu"] += 1
             else:
-                church_id = _nearest(grid, lat, lng, titular.key(name), q)
+                church_id = _nearest(grid, lat, lng, titular.key(name))
                 if church_id:
                     stats["spojeno_prostorno"] += 1
 
@@ -164,34 +162,21 @@ def run() -> None:
     log.info("građevina sa slikom: %d | s Wikipedijom: %d", n_img, n_wiki)
 
 
-def _nearest(grid, lat: float, lng: float, tkey: str | None, q: str | None = None,
-             *, drugi_q: bool = True, genericki: bool = False) -> int | None:
-    """Najbliža građevina unutar RADIUS_M, uz uvjet da titular ne proturječi.
-
-    Odluka 314 (S3, Q133733258 „BDM Bezgrešne na Knežiji" stopljen u
-    „BDM Pomoćnice" 20 m dalje):
-      - `drugi_q`: građevina koja već nosi DRUGI Wikidata entitet nije
-        kandidat — dva Q su dva objekta;
-      - `genericki` (ISKLJUČENO, samo za mjerenje): kandidat s istim
-        generičkim titularom („Majka Božja") se preskače. Izmjereno: −22
-        spoja, među njima točni Čabar Q138496303 i Križevci „Majke Božje
-        Koruške" — odbačeno.
-    """
+def _nearest(grid, lat: float, lng: float, tkey: str | None) -> int | None:
+    """Najbliža građevina unutar RADIUS_M, uz uvjet da titular ne proturječi."""
     best: tuple[float, int] | None = None
     c_lat, c_lng = int(lat * 100), int(lng * 100)
     for dlat in (-1, 0, 1):
         for dlng in (-1, 0, 1):
-            for cid, clat, clng, ctit, cq in grid.get((c_lat + dlat, c_lng + dlng), []):
+            for cid, clat, clng, ctit in grid.get((c_lat + dlat, c_lng + dlng), []):
                 d = haversine_m(lat, lng, clat, clng)
                 if d > RADIUS_M:
                     continue
-                if drugi_q and q and cq and cq != q:
-                    continue
-                ckey = titular.key(ctit) if ctit else None
-                if tkey and ckey and ckey != tkey:
-                    continue
-                if genericki and tkey and tkey in GENERIC_TITULARS and ckey == tkey:
-                    continue
+                if tkey and ctit:
+                    from src.titular import key as tk
+
+                    if tk(ctit) and tk(ctit) != tkey:
+                        continue
                 if best is None or d < best[0]:
                     best = (d, cid)
     return best[1] if best else None
