@@ -9,7 +9,7 @@ import sqlite3
 
 import pytest
 
-from src.match import best_match, build_index, place_key
+from src.match import best_match, build_index, place_key, weak_claim
 
 
 def row(id_: int, name: str, city: str | None = None,
@@ -138,3 +138,26 @@ def test_place_key_normalises_grad_prefix():
 def test_empty_inputs_are_safe(index):
     assert best_match(index, "", place_key("Lovran")) is None
     assert best_match(index, "Crkva sv. Jurja", set()) is None
+
+
+def test_weak_claim_trsat_ide_prije_sv_nikole():
+    # Rijeka, 2026-11-20: OSM „Franjevački samostan" (Trsat, r3560310) nema
+    # titular, pa je podniz obje pravne osobe i obje daju score 100. Kad je
+    # pravilo konfesije maknulo pravoslavnu sv. Nikolu (koja je rušila
+    # marginu), samostan s Ivekovićeve 8 uzeo je trsatsku zgradu jer mu je
+    # id manji. Slab zahtjev mora doći na red zadnji.
+    idx = build_index([row(1, "Franjevački samostan", city="Rijeka")])
+    nikola = "FRANJEVAČKI SAMOSTAN SV. NIKOLE"
+    trsat = "FRANJEVAČKI SAMOSTAN RIJEKA - TRSAT"
+    hits = {n: best_match(idx, n, {"rijeka"}) for n in (nikola, trsat)}
+    assert all(h is not None and h[0].id == 1 and h[1] == 100 for h in hits.values())
+    assert weak_claim(nikola, hits[nikola][0])
+    assert not weak_claim(trsat, hits[trsat][0])
+    assert sorted([nikola, trsat], key=lambda n: weak_claim(n, hits[n][0])) == [trsat, nikola]
+
+
+def test_weak_claim_ne_dira_poklapanje_titulara(index):
+    cand, _ = best_match(index, "ŽUPA SV. JURJA", {"lovran"})
+    assert not weak_claim("ŽUPA SV. JURJA", cand)
+    # Ni pravna osoba bez sveca nije slab zahtjev.
+    assert not weak_claim("FRANJEVAČKI SAMOSTAN RIJEKA - TRSAT", cand)

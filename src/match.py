@@ -139,6 +139,20 @@ def compatible(church: Any, parish: Any) -> bool:
     return True
 
 
+def weak_claim(name: str, cand: Candidate) -> bool:
+    """Je li pogodak samo podniz bez sveca? (scripts/11, redoslijed 1. prolaza)
+
+    Pravna osoba imenuje sveca, a građevina nema titular: „FRANJEVAČKI
+    SAMOSTAN SV. NIKOLE" i OSM „Franjevački samostan" daju token_set_ratio
+    100 jer je cijeli naziv građevine podniz. To je slabiji dokaz od
+    pogotka bez proturječja: ista građevina jednako savršeno odgovara i
+    „FRANJEVAČKOM SAMOSTANU RIJEKA - TRSAT". Takav zahtjev se ne odbija
+    (sam u mjestu je obično točan: Badija, Pridvorje), ali dolazi NA RED
+    ZADNJI, pa građevinu prvo dobije pravna osoba kojoj naziv ne proturječi.
+    """
+    return bool(head_key(name)) and not cand.hkey
+
+
 def build_index(rows: Iterable) -> dict[str, list[Candidate]]:
     """Mjesto → lista kandidata. Kandidat s više mjesta je u više blokova."""
     idx: dict[str, list[Candidate]] = {}

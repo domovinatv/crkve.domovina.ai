@@ -29,6 +29,13 @@ je 190 filijala, među njima sinagoge, džamije i Jehovine svjedoke na
 srpskopravoslavne crkvene općine (pravilo štiti samo katoličku granicu), a
 to je pitanje spajanja nekatoličkih zajednica, ne ovog pravila.
 
+Redoslijed 1. prolaza: pogodak gdje pravna osoba imenuje sveca, a građevina
+nema titular (`match.weak_claim`), dolazi na red zadnji. Bez toga je
+„FRANJEVAČKI SAMOSTAN SV. NIKOLE" (Rijeka, Ivekovićeva 8) uzeo trsatski
+„Franjevački samostan" prije „FRANJEVAČKOG SAMOSTANA RIJEKA - TRSAT": čim je
+pravilo konfesije maknulo pravoslavnu sv. Nikolu iz bazena, podniz
+„franjevački samostan" ostao je sam na scoreu 100 (2026-11-20, S2).
+
   uv run python scripts/11_match_parishes.py [--dry-run]
 """
 from __future__ import annotations
@@ -43,7 +50,8 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from src.db import connect  # noqa: E402
-from src.match import best_match, build_index, compatible, place_key  # noqa: E402
+from src.match import (  # noqa: E402
+    best_match, build_index, compatible, place_key, weak_claim)
 from src.parish_geo import MAX_FILIJALA_KM, km  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -94,13 +102,23 @@ def run(dry_run: bool = False) -> None:
         # svoje crkve), pa se drži u dictu — 2. prolaz treba svježu vrijednost.
         seat: dict[int, tuple] = {p["id"]: (p["lat"], p["lng"]) for p in parishes}
 
-        for p in parishes:
-            # Evidencija daje samo mjesto sjedišta — jedna razina. Naziv za
-            # usporedbu: "ŽUPA SV. JURJA, LOVRAN"; match.py skida tipski
-            # prefiks i mjesto iza zareza sam.
+        # Evidencija daje samo mjesto sjedišta — jedna razina. Naziv za
+        # usporedbu: "ŽUPA SV. JURJA, LOVRAN"; match.py skida tipski
+        # prefiks i mjesto iza zareza sam.
+        hits = {
+            p["id"]: best_match(index, p["name"], place_key(p["city"]),
+                                accept=lambda c, p=p: compatible(c, p))
+            for p in parishes
+        }
+        # Građevinu koju traže dvije pravne osobe dobiva prva na redu. Slabi
+        # zahtjevi (`match.weak_claim`: osoba imenuje sveca, građevina nema
+        # titular) idu zadnji — sortiranje je stabilno, ostalo ostaje po id-u.
+        order = sorted(parishes, key=lambda p: bool(
+            hits[p["id"]] and weak_claim(p["name"], hits[p["id"]][0])))
+
+        for p in order:
             places = place_key(p["city"])
-            hit = best_match(index, p["name"], places,
-                             accept=lambda c, p=p: compatible(c, p))
+            hit = hits[p["id"]]
             if not hit:
                 stats["nespojeno"] += 1
                 if places:
