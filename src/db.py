@@ -86,6 +86,12 @@ CREATE TABLE IF NOT EXISTS churches (
   geo_verified    INTEGER DEFAULT 0,  -- 1 = Places potvrdio lokaciju/match
   geo_verify_m    REAL,               -- udaljenost OSM ↔ Places, u metrima
 
+  -- OSM dedup (src/dedup.py, odluka 400): uloga i „ima li vlastito ime” iz
+  -- tagova, jer ih audit mora računati nad bazom kao i dedup.
+  osm_role        TEXT,      -- worship | monastery | shrine
+  osm_named       INTEGER,   -- 1 = OSM name/official_name/alt_name (0 = placeholder)
+  osm_amenity     TEXT,      -- OSM `amenity` (way bez imena i amenity = čisti tlocrt)
+
   -- Meta
   source          TEXT,      -- JSON array: ["osm","wikidata","kulturna-dobra"]
   notes           TEXT,
@@ -99,6 +105,20 @@ CREATE TABLE IF NOT EXISTS church_aliases (
   alias      TEXT NOT NULL,
   source     TEXT,
   UNIQUE(church_id, alias, source)
+);
+
+-- Identitet OSM čvora spojenog u tlocrt iste zgrade (src/dedup.py, odluka 403):
+-- ponovni ingest ga prepoznaje, a stari slug se preusmjerava na preživjeli.
+CREATE TABLE IF NOT EXISTS church_merged (
+  id          INTEGER PRIMARY KEY,
+  church_id   INTEGER NOT NULL REFERENCES churches(id) ON DELETE CASCADE,
+  osm_type    TEXT NOT NULL,
+  osm_id      INTEGER NOT NULL,
+  slug        TEXT NOT NULL UNIQUE,  -- slug čvora prije spajanja
+  name        TEXT,                  -- naziv čvora
+  razlog      TEXT,                  -- isti_naziv | ista_glava | bez_imena [+tlocrt] | rucno
+  distance_m  REAL,
+  UNIQUE(osm_type, osm_id)
 );
 
 -- ---------------------------------------------------------------------------
@@ -233,6 +253,7 @@ CREATE INDEX IF NOT EXISTS idx_pa_city    ON parishes(city);
 CREATE INDEX IF NOT EXISTS idx_pa_diocese ON parishes(diocese);
 CREATE INDEX IF NOT EXISTS idx_pa_kind    ON parishes(kind);
 CREATE INDEX IF NOT EXISTS idx_alias      ON church_aliases(alias);
+CREATE INDEX IF NOT EXISTS idx_merged     ON church_merged(church_id);
 """
 
 
@@ -246,7 +267,12 @@ def connect(db_path: Path = DB_PATH) -> sqlite3.Connection:
 
 # Kolone dodane nakon prvog izdanja sheme. `CREATE TABLE IF NOT EXISTS` ne
 # dira postojeću tablicu, pa bi bez ovoga postojeća baza ostala bez njih.
-_ADDED_COLUMNS = [("parishes", "duplicate_of", "INTEGER")]
+_ADDED_COLUMNS = [
+    ("parishes", "duplicate_of", "INTEGER"),
+    ("churches", "osm_role", "TEXT"),
+    ("churches", "osm_named", "INTEGER"),
+    ("churches", "osm_amenity", "TEXT"),
+]
 
 
 def _migrate(conn: sqlite3.Connection) -> None:

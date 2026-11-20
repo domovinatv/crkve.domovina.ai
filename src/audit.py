@@ -23,7 +23,7 @@ from collections import Counter, defaultdict
 from collections.abc import Callable
 from pathlib import Path
 
-from . import stats
+from . import dedup, stats
 from .denomination import (  # noqa: F401 — re-eksport, vidi „Konfesija" niže
     DOZVOLJENE_DENOMINACIJE,
     DOZVOLJENE_RELIGIJE,
@@ -296,31 +296,56 @@ def _ista_zgrada(a, b) -> tuple[bool, bool] | None:
 
 
 def node_way_duplikati(conn: sqlite3.Connection) -> dict:
-    """Glavna brojka: OSM node + way/relation (ista zgrada ucrtana kao točka
-    i kao tlocrt). Ostali tipovi parova (way+way, way+wikidata…) ne ulaze u
+    """Glavna brojka: OSM node + way/relation ≤ 40 m kojima se nazivi slažu
+    (isti naziv, ista glava titulara, ili jedna strana bez OSM imena), a
+    `src/dedup.py` ih NIJE spojio. Predikati su dedupovi (`nazivi_spojivi`,
+    `zapreka`), pa mjera i pravilo ne mogu otići svaki na svoju stranu.
+
+    U `value` ide samo par koji pravilo smatra istom zgradom a nije spojen.
+    Par različite uloge ili različitog `wikidata` taga, i par iz
+    `dedup.OSTAVLJENI`, je namjerno ostavljen i ide u `namjerno_ostavljeni`
+    s razlogom. Ostali tipovi parova (way+way, way+wikidata…) ne ulaze u
     `value` — way+way je često crkva i zvonik/kapela istog titulara — ali se
-    ispisuju u `ostali_tipovi_ista_glava` kao ulaz za S4."""
-    pairs, ostali = [], Counter()
-    for a, b, d in parovi_blizu(conn):
+    ispisuju u `ostali_tipovi_ista_glava`."""
+
+    ostali = Counter()
+    for a, b, _ in parovi_blizu(conn):
         tipovi = {_tip(a), _tip(b)}
-        nw = "node" in tipovi and tipovi & {"way", "relation"} and len(tipovi) == 2
+        if "node" in tipovi and tipovi & {"way", "relation"} and len(tipovi) == 2:
+            continue
         hit = _ista_zgrada(a, b)
-        if not hit:
+        if hit and hit[1]:
+            ostali["+".join(sorted([_tip(a), _tip(b)]))] += 1
+
+    slug = {(r["osm_type"], r["osm_id"]): r["slug"] for r in conn.execute(
+        "SELECT slug, osm_type, osm_id FROM churches WHERE osm_type IS NOT NULL")}
+    pairs, ostavljeni = [], []
+    for d, n, w in dedup.parovi(dedup.zapisi_iz_baze(conn), NODE_WAY_M):
+        nazivi = dedup.nazivi_spojivi(n, w)
+        if nazivi is None:
             continue
-        if not nw:
-            if hit[1]:
-                ostali["+".join(sorted([_tip(a), _tip(b)]))] += 1
-            continue
-        node, way = (a, b) if _tip(a) == "node" else (b, a)
-        pairs.append({"node": node["slug"], "way": way["slug"], "m": round(d),
-                      "isti_naziv": hit[0], "ista_glava": hit[1]})
-    pairs.sort(key=lambda p: (p["node"], p["way"]))
+        opis = (f"{slug[(n.osm_type, n.osm_id)]} ~ {slug[(w.osm_type, w.osm_id)]} "
+                f"({round(d)} m)")
+        zapreka = dedup.zapreka(n, w)
+        if (n.key, w.key) in dedup.OSTAVLJENI:
+            ostavljeni.append(f"{opis}: {dedup.OSTAVLJENI[(n.key, w.key)]}")
+        elif zapreka == "uloga":
+            ostavljeni.append(f"{opis}: dvije zgrade, uloga {n.role} ≠ {w.role}")
+        elif zapreka == "wikidata":
+            ostavljeni.append(f"{opis}: različit wikidata {n.wikidata} ≠ {w.wikidata}")
+        else:
+            pairs.append({"opis": opis, "nazivi": nazivi})
+    pairs.sort(key=lambda p: p["opis"])
+    spojeno = conn.execute("SELECT COUNT(*) FROM church_merged").fetchone()[0]
     return {
         "value": len(pairs),
-        "isti_naziv": sum(p["isti_naziv"] for p in pairs),
-        "ista_glava_titulara": sum(p["ista_glava"] for p in pairs),
+        "isti_naziv": sum(p["nazivi"] == "isti_naziv" for p in pairs),
+        "ista_glava_titulara": sum(p["nazivi"] == "ista_glava" for p in pairs),
+        "bez_imena": sum(p["nazivi"] == "bez_imena" for p in pairs),
+        "spojeno": spojeno,
+        "namjerno_ostavljeni": sorted(ostavljeni),
         "ostali_tipovi_ista_glava": _counter(ostali.elements()),
-        "examples": [f"{p['node']} ~ {p['way']} ({p['m']} m)" for p in pairs],
+        "examples": [p["opis"] for p in pairs],
     }
 
 
@@ -463,7 +488,7 @@ METRICS: list[Metric] = [
     ("konfesija_nenormalizirana", konfesija_nenormalizirana,
      "denomination/religion izvan dozvoljenog skupa — crkve + pravne osobe + biskupije"),
     ("node_way_duplikati", node_way_duplikati,
-     f"OSM node + way/relation ≤{NODE_WAY_M:.0f} m, isti naziv ili glava titulara"),
+     f"OSM node + way/relation ≤{NODE_WAY_M:.0f} m, spojivi nazivi, a dedup ih nije spojio"),
     ("places_koordinate_u_exportu", places_koordinate_u_exportu,
      "župe s koordinatama iz Google Placesa (idu u javne exporte)"),
     ("parish_count_razlika", parish_count_razlika,
@@ -499,7 +524,8 @@ def _sazetak(name: str, m: dict) -> str:
     if name == "konfesija_nenormalizirana":
         return ", ".join(f"{t} {m[t]['value']}" for t in ("churches", "parishes", "dioceses"))
     if name == "node_way_duplikati":
-        return f"isti naziv {m['isti_naziv']}, ista glava {m['ista_glava_titulara']}"
+        return (f"spojeno {m['spojeno']}, namjerno ostavljeno "
+                f"{len(m['namjerno_ostavljeni'])}")
     if name == "places_koordinate_u_exportu":
         return f"google_maps_uri {m['google_maps_uri']}"
     if name == "wikidata_dijeljen":

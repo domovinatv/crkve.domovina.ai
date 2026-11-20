@@ -10,9 +10,10 @@ objekata kao tlocrt (way/relation), ne samo točku. Upit je unija širih od
   historic=church               nekadašnje crkve / ruševine
   historic=wayside_shrine       pilovi i poklonci (kind='poklonac')
 
-Ukupno ~6840 elemenata. Dedup je po (osm_type, osm_id) — Overpass ne vraća
+Ukupno ~6840 elemenata. Upis je po (osm_type, osm_id) — Overpass ne vraća
 duplikate unutar jednog upita, ali unija tagova može isti objekt dohvatiti
-više puta u budućim proširenjima upita.
+više puta u budućim proširenjima upita. Na kraju se ista zgrada ucrtana kao
+čvor i kao tlocrt spaja u jedan zapis (`src/dedup.py`, odluka 400).
 
 Županija/općina se dodjeljuju prostorno (src/geo_hr.py) nad DGU granicama iz
 ../karta-hrvatske — OSM `addr:*` tagovi su prerijetki da bi bili dovoljni.
@@ -30,7 +31,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from src import geo_hr, kinds, osm_fixes, titular  # noqa: E402
+from src import dedup, geo_hr, kinds, osm_fixes, titular  # noqa: E402
 from src.denomination import normalize_denomination  # noqa: E402
 from src.db import add_alias, connect, merge_source  # noqa: E402
 from src.normalize import hrvatski_naziv, slugify  # noqa: E402
@@ -66,6 +67,7 @@ def run() -> None:
             t = osm_fixes.apply(osm_type, osm_id, el.get("tags") or {})
 
             name = t.get("name") or t.get("official_name") or t.get("alt_name")
+            named = dedup.ima_ime(t)
             coords = latlng(el)
             if not coords:
                 stats["bez_koordinata"] += 1
@@ -142,6 +144,9 @@ def run() -> None:
                 phone=t.get("phone") or t.get("contact:phone"),
                 email=t.get("email") or t.get("contact:email"),
                 website=t.get("website") or t.get("contact:website"),
+                osm_role=dedup.uloga(t),
+                osm_named=int(named),
+                osm_amenity=t.get("amenity"),
                 source=source,
             )
 
@@ -175,6 +180,11 @@ def run() -> None:
 
             kind_counts[kind] += 1
             stats["ok"] += 1
+
+        # Ista zgrada kao čvor i kao tlocrt → jedan zapis (src/dedup.py). Ovdje,
+        # PRIJE 05 i 10/11, da nijedan kasniji spoj ne sjedne na duplikat.
+        spojevi = dedup.apply(conn)
+        stats["dedup_spojeno"] = len(spojevi)
 
         conn.commit()
         total = conn.execute("SELECT COUNT(*) FROM churches").fetchone()[0]
