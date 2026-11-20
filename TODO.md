@@ -40,6 +40,7 @@ Legenda: `[x]` gotovo · `[ ]` otvoreno · `[~]` u radu · `(!)` traži korisnik
 ## F3 — objava
 
 - [ ] (!) Korisnik odobrio deploy ispravljenog snimka → S6
+- [ ] (!) Korisnik odlučio o Places koordinatama u git povijesti `data/exports/` (odluka 10) → S6
 - [ ] Deploy crkve.domovina.ai + gis.domovina.ai, žive brojke = lokalni `audit.json` → S6
 - [ ] (!) Korisnik odobrio svjež ingest (mreža: Overpass, data.gov.hr, Wikidata) → S7
 - [ ] Svjež ingest, diff starog i novog snimka zapisan, `make audit` i dalje na ciljnim nulama → S7

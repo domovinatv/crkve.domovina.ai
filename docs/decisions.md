@@ -28,5 +28,10 @@ novom koja se poziva na staru. Blokovi: S0 1–99, S1 100–199, S2 200–299 �
 7. **Deploy i svjež ingest su vrata.** Sesija pripremi, upiše pitanje na vrh sljedećeg
    handoffa i staje.
 8. **Testovi bez mreže.** Fixture iz keša ili ručno napisani primjeri; `skipped 0`.
+10. **Places koordinate su i u git povijesti.** `data/exports/` je commitan u javni repo,
+   pa su `zupe.geojson`/`zupe.csv` s koordinatama iz Placesa u povijesti od 2026-08-15.
+   S5 ih uklanja iz idućih commitova; prepisivanje povijesti (`git filter-repo`, force
+   push) je nepovratno i korisnikova odluka — pitanje ide u vrata S6. Revizija: ako
+   korisnik odluči da je uklanjanje iz HEAD-a dovoljno.
 9. **Plan je javan** (repo je javan); u njemu nema ključeva, IP-ova iz allowliste ni
    pravnih procjena izvan odluke 5.
