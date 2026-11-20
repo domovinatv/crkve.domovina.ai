@@ -25,3 +25,6 @@ data/raw/
 # iz baze. Isti razlog kao GeoJSON-i u karta-web: regeneriraju se pred svaki
 # deploy (`make export-web`), pa bi u gitu bili samo šum u svakom commitu.
 frontend/public/data/
+
+# Izlaz `make audit` — regenerira se, nosi popise slugova (odluka 103)
+data/exports/audit.json

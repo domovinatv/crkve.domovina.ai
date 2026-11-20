@@ -35,3 +35,48 @@ novom koja se poziva na staru. Blokovi: S0 1–99, S1 100–199, S2 200–299 �
    korisnik odluči da je uklanjanje iz HEAD-a dovoljno.
 9. **Plan je javan** (repo je javan); u njemu nema ključeva, IP-ova iz allowliste ni
    pravnih procjena izvan odluke 5.
+
+## S1 (2026-11-20)
+
+100. **Polazna točka lanca je rebuild od nule, ne deployani snimak.** `make rebuild`
+   (= `clean-db` + `PLACES_OFFLINE=1 make all-places`) dvaput daje bajt-identične exporte i
+   `audit.json`. Deployani snimak (2026-08-27) od njega se razlikuje u 10 župa, 1 crkvi i 3
+   biskupije, jer je nastao inkrementalno (Places prije korekcije homonima). Sve sesije mjere
+   prema rebuildu. Mjerenje: `docs/research/2026-11-20-audit-polazno.md`. Revizija: S7
+   (svjež ingest).
+101. **Dozvoljeni skup konfesija** (`src/audit.py`: `DOZVOLJENE_DENOMINACIJE`,
+   `DOZVOLJENE_RELIGIJE`) je OSM vokabular, jedan za crkve, pravne osobe i biskupije.
+   - Katoličke: `roman_catholic`, `greek_catholic`, `old_catholic`.
+   - Pravoslavne: `orthodox` (generički, dozvoljen) i nacionalne `*_orthodox`.
+   - Protestantske i druge kršćanske: `protestant`, `lutheran`, `reformed`, `evangelical`,
+     `baptist`, `pentecostal`, `seventh_day_adventist` (ne `adventist`), `methodist`,
+     `anglican`, `waldensian`, `jehovahs_witness`, `mormon`, `new_apostolic`.
+   - Islam i budizam: `sunni`, `shia`, `zen`.
+
+   `catholic` se svodi na `roman_catholic`. Religija upisana kao denominacija (`jewish`,
+   `hindu`, `buddhist`) postaje NULL, a smeće i višestruke vrijednosti također.
+   Religije: `christian`, `muslim`, `jewish`, `buddhist`, `hindu`, `pagan`. S2 to provodi u
+   `src/denomination.py` i koristi `audit.is_nekatolicka`/`NEKATOLICKE_DENOMINACIJE`, da
+   mjera i pravilo ne bi bili dvije definicije. Revizija: nova vrijednost iz svježeg ingesta.
+102. **Pravilo `titular_genitiv`:** titular „sv. X i Y” je kriv ako je ijedna riječ niza u
+   genitivu. Padež riječi određuju tri provjere, redom:
+   - leksikon padeža iz `titular.py`;
+   - završetak `-e` (osim `-je`);
+   - desna riječ para na `-a` koja nije poznat nominativ, osim ako je lijeva riječ poznati
+     nominativ na `-a`.
+
+   Mjeri crkve i pravne osobe odvojeno. Poznata 3 lažno pozitivna su zapisana u
+   istraživanju. Revizija: kad S3 doda oblike u leksikon.
+103. **`data/exports/` u gitu ostaje deployani snimak do S6.** Rebuild mijenja `zupe.*`, a oni
+   i dalje nose Places koordinate (odluka 5), sada 991 umjesto 989. Commit bi u javni repo dodao
+   nove. Lokalno se exporti regeneriraju, a commitaju tek čisti (S5/S6). `audit.json` je
+   gitignoriran: regenerira se i nosi popise slugova. Revizija: S5 (Places izbačen iz exporta).
+104. **`parish_count` se ne ispravlja na broj zapisa.** `dioceses.parish_count` broji aktivne i
+   različite župe, a razlika 2 su Prizna (ugašena) i duplikat Prgomet. Prema aktivnima je
+   razlika 0. Stavka TODO-a „85→86, 74→75” bila je pogrešan smjer. S3 provjerava što prikazuje
+   frontend (`34`) i usklađuje metriku, a ne podatak.
+105. **`PLACES_OFFLINE=1`: promašaj keša je prazan rezultat, ne mreža.** Rebuild mora raditi
+   bez ključa. Keš 2026-08-15 nema 4–5 varijanti upita koje današnji kod traži za homonime;
+   offline one ostaju bez Places pogotka (sve imaju `naselje-centroid`). `make clean-db` ide
+   prvi u `all`/`all-places`, jer `10_match_heritage` na spojenoj bazi ostavi 1115 spojenih zapisa u `heritage_unmatched` i izgubi
+   840 `year_built` (nije ponovljiv, otvoreno za S7).

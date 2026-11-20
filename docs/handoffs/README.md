@@ -28,7 +28,7 @@ Handoff se mijenja samo prema naprijed: gotovi `SN` se ne prepisuju, služe kao 
 | Sesija | Paket | Stanje | Commit | Testovi | Napomena |
 | --- | --- | --- | --- | --- | --- |
 | S0 | Audit + plan | gotovo | 5e8c36c | 126 | audit 2026-11-20; odluke 1–9 |
-| S1 | venv, CLAUDE.md, `make audit`, reproducibilnost | otvoreno | | | |
+| S1 | venv, CLAUDE.md, `make audit`, reproducibilnost | gotovo | (S1 HEAD) | 177 | `make rebuild` 2× identičan; nekat. 72, genitiv 302, konf. 1175, dupl. 40, places 991; odluke 100–105 |
 | S2 | Konfesija: normalizacija + pravilo matchera | otvoreno | | | |
 | S3 | Titulari + sitnice | otvoreno | | | |
 | S4 | Node+way duplikati | otvoreno | | | |
@@ -44,8 +44,10 @@ Handoff se mijenja samo prema naprijed: gotovi `SN` se ne prepisuju, služe kao 
 - **Opseg:** `src/`, `scripts/`, `tests/`, `Makefile`, `docs/`. `frontend/` i
   `../karta-hrvatske/apps/karta-web` samo gdje paket kaže (S5, S6). `data/raw/` se ne
   briše (`make clean-cache` samo u S7).
-- **Rebuild:** `make all-places` iz keša, bez mreže. Nikad `make all` poslije Placesa
-  (briše `geo_verified`/`geo_conflicts`, vidi `CLAUDE.md`). Rebuild traje minute; pokreni
+- **Rebuild:** `make rebuild` (od nule, `PLACES_OFFLINE=1`, bez mreže i ključa; odluka 100,
+  105). Nikad `make all` poslije Placesa (nema koraka 13, pa ostanu prazni `geo_verified`/`geo_conflicts`).
+  Mrežu pri mjerenju blokiraj: `HTTP_PROXY=http://127.0.0.1:9 HTTPS_PROXY=… ALL_PROXY=…`.
+  `data/exports/` se do S5/S6 ne commita (odluka 103). Rebuild traje minute; pokreni
   ga u pozadini i javi se tek na kraju.
 - **Orkestracija:** posao rade Opus 5.5 subagenti (`model: "opus"`), glavna sesija
   orkestrira. Paket razbij na dva agenta: (a) implementacija, (b) testovi + rebuild +

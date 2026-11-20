@@ -59,11 +59,16 @@ poklonac) nema župu. `dioceses` drži (nad)biskupije i nekatoličke zajednice.
   istog poziva; 2359 poziva ukupno, keširano.
 
 ## Pipeline
-`make all` = `init → ingest (01–05) → match (10–12 + fix-locations) →
-derive (20) → export (30–32) → sync-karta (33) → stats (40)`. Sve je idempotentno; sirovi
-odgovori se kešraju u `data/raw/<izvor>/<sha>.json` pa drugi run ne dira
-mrežu (`make clean-cache`
-za prisilni refresh). Korak 20 mora doći poslije 12 (bez koordinata župa nema
+`make all` = `clean-db → init → ingest (01–05) → match (10–12 + fix-locations) →
+derive (20) → export (30–32) → sync-karta (33) → stats (40)`. Sirovi odgovori se
+kešraju u `data/raw/<izvor>/<sha>.json` pa drugi run ne dira mrežu (`make
+clean-cache` za prisilni refresh). **Rebuild iz keša je `make rebuild`** (=
+`PLACES_OFFLINE=1 make all-places`): bez mreže i ključa, dvaput bajt-identičan.
+Baza se gradi **od nule** (`clean-db`), jer koraci NISU svi ponovljivi na
+postojećoj bazi: `10_match_heritage` na već spojenoj bazi sve vidi kao zauzeto
+(923 → 2038 nespojenih, `year_built` 1499 → 659). Places iz keša bez
+`PLACES_OFFLINE` ide na mrežu za homonime premještene poslije Places runa.
+Vidi `docs/research/2026-11-20-audit-polazno.md`. Korak 20 mora doći poslije 12 (bez koordinata župa nema
 se od čega derivirati) i prije 31.
 
 Redoslijed 11 → 12 je bitan: `11_match_parishes` daje župi koordinate **njezine

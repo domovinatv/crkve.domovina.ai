@@ -57,4 +57,6 @@ bez kvote) u S5 i svjež ingest u S7. Google Places se u ovom lancu ne poziva.
 
 ## Gdje smo
 
-S0 (2026-11-20, 5e8c36c): audit napravljen, plan napisan, koda nema. Sljedeća je S1.
+S0 (2026-11-20, 5e8c36c): audit napravljen, plan napisan.
+S1 (2026-11-20): `make audit` (11 metrika), `make rebuild` (od nule, offline, 2× identičan),
+odluke 100–105. Polazne brojke: `docs/research/2026-11-20-audit-polazno.md`. Sljedeća je S2.

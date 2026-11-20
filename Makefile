@@ -1,10 +1,18 @@
 # crkve.domovina.ai — orkestracija pipelinea. `make help` za popis.
 # `make all` radi bez ijednog API ključa; ključ treba samo `make places`.
 
-.PHONY: help init ingest match fix-locations derive export export-web stats audit all sync-karta places test clean-cache
+.PHONY: help clean-db rebuild init ingest match fix-locations derive export export-web stats audit all sync-karta places test clean-cache
 
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
+
+# Baza se gradi OD NULE. `init` je idempotentan i NE briše postojeću bazu, a
+# 10_match_heritage na već spojenoj bazi sve kandidate vidi kao zauzete:
+# heritage_unmatched ostane 2038 umjesto 923, year_built padne s 1499 na 659
+# (izmjereno 2026-11-20, docs/research/2026-11-20-audit-polazno.md). Zato
+# `all` i `all-places` počinju s `clean-db`.
+clean-db: ## obriši data/crkve.db (izvedena je; keš data/raw ostaje)
+	rm -f data/crkve.db data/crkve.db-wal data/crkve.db-shm
 
 init: ## kreiraj SQLite shemu
 	uv run python scripts/00_init_db.py
@@ -52,9 +60,12 @@ stats: ## izvještaj o pokrivenosti (+ data/exports/stats.json)
 audit: ## metrike grešaka u podacima (+ data/exports/audit.json); ARGS="--db … --out …"
 	uv run python scripts/41_audit.py $(ARGS)
 
-all: init ingest match derive export sync-karta stats export-web ## cijeli pipeline od nule (bez ključeva)
+all: clean-db init ingest match derive export sync-karta stats export-web ## cijeli pipeline od nule (bez ključeva)
 
-all-places: init ingest match places fix-locations derive export sync-karta stats export-web ## kao `all` + Places korak
+all-places: clean-db init ingest match places fix-locations derive export sync-karta stats export-web ## kao `all` + Places korak
+
+rebuild: ## all-places iz keša: bez mreže i bez ključa (PLACES_OFFLINE=1)
+	PLACES_OFFLINE=1 $(MAKE) all-places
 
 test: ## pytest
 	uv run pytest -q
