@@ -30,7 +30,7 @@ Handoff se mijenja samo prema naprijed: gotovi `SN` se ne prepisuju, služe kao 
 | S0 | Audit + plan | gotovo | 5e8c36c | 126 | audit 2026-11-20; odluke 1–9 |
 | S1 | venv, CLAUDE.md, `make audit`, reproducibilnost | gotovo | ce64541 | 177 | `make rebuild` 2× identičan; nekat. 72, genitiv 302, konf. 1175, dupl. 40, places 991; odluke 100–105 |
 | S2 | Konfesija: normalizacija + pravilo matchera | gotovo | 555c02a | 271 | nekat. 72→0, nekat. župne 2→0, konf. 1175→0; sa župom 2929→2857; odluke 200–206 |
-| S3 | Titulari + sitnice | otvoreno | | | |
+| S3 | Titulari + sitnice | gotovo | 4cc8ccf | 345 | genitiv 302→0, parish_count 2→0, wikidata_dijeljen 4→3, engl. 32→30; sa župom 2857→2855; odluke 300–313 (314 povučena); Knežija i Z-834 u S4 |
 | S4 | Node+way duplikati | otvoreno | | | |
 | S5 | DGU umjesto Placesa | otvoreno | | | |
 | S6 | (!) Deploy ispravljenog snimka | vrata | | | |

@@ -62,4 +62,9 @@ S1 (2026-11-20): `make audit` (11 metrika), `make rebuild` (od nule, offline, 2�
 odluke 100–105. Polazne brojke: `docs/research/2026-11-20-audit-polazno.md`.
 S2 (2026-11-20, 555c02a): `src/denomination.py`, `match.compatible`, slabi zahtjevi zadnji
 (Trsat); konfesijske metrike na 0, odluke 200–206. Mjerenje: `docs/research/2026-11-20-s2-konfesija.md`.
-Sljedeća je S3.
+S3 (2026-11-20, 4cc8ccf): titulari „X i Y” u nominativu, Tavelić u glavi, mjesto iz naziva
+pravne osobe, BDM → Majka Božja, spor oko građevine dobiva pravna osoba iz istog naselja,
+eparhija/manastiri, `osm_fixes`, hrvatski nazivi; `titular_genitiv` 302→0, `parish_count_razlika`
+2→0, `wikidata_dijeljen` 4→3. Odluke 300–313, 314 povučena (Wikidata duplikati → S4). Mjerenje:
+`docs/research/2026-11-20-s3-titulari.md`, `docs/research/2026-11-20-s3-rebuild.md`.
+Sljedeća je S4.
