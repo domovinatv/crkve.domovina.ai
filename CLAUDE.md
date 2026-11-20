@@ -278,6 +278,12 @@ s assetima na Workeru: **`docs/2026-08-28-frontend-tanstack.md`**. Ako mijenjaš
 matcher, Places validaciju ili derivaciju granica, pročitaj to prije nego
 "popraviš" nešto što je namjerno.
 
+## Lanac sesija: kvaliteta podataka (od 2026-11-20)
+Audit 2026-11-20 je otvorio lanac S1–S7: `TODO.md`, `docs/plan.md`,
+`docs/decisions.md`, `docs/handoffs/`. „Nastavi kvalitetu podataka” (ili „nastavi
+zadnji handoff”) znači: prvi otvoreni red u tablici „Stanje lanca” u
+`docs/handoffs/README.md`, pa njegov `SN.md`. S6 i S7 su vrata (deploy, svjež ingest).
+
 ## Otvoreno / sljedeći koraci
 - **`heritage_unmatched`** — ostatak zaštićene baštine bez para (izvozi se u
   `data/exports/bastina-nespojeno.csv`). Izmjereno: **za 922 od 923 blok
