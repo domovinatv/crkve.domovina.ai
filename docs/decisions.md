@@ -112,3 +112,45 @@ novom koja se poziva na staru. Blokovi: S0 1–99, S1 100–199, S2 200–299 �
    0 krivo, 3 nejasno. To je zasebna stavka poslije S3, zajedno s 14 građevina nepoznate
    konfesije koje 2. prolaz danas veže na SPC općine (neke po nazivu katoličke). Revizija: kad
    se stavka uzme.
+
+## S3 (2026-11-20)
+
+300. **Niz „X i Y” je cijeli u nominativu, a kanonski oblik je „sv. Petar i Pavao”, bez
+   „apostoli”.** Zajednički naslov ispred niza („Svetih Apostola Petra i Pavla”, „Ap.”,
+   „Arhanđela Mihaila i Gavrila”, „mučenika Srđa i Baha”) i zajednički epitet iza drugog imena
+   („apostola”, „AP.”, „mučenika”, „MM.”) padaju (`titular._SERIES_TITLE`, `_GROUP_EPITHET`).
+   Razlog: izvori ih pišu nedosljedno (s njima, bez njih, iza zareza), a puni titular nosi bonus
+   +8 u matcheru samo kad je jednak; glava mora biti prvo ime, ne „sv apostola”. „I” koji veže
+   epitete jednog sveca („Katarine djevice i mučenice”, „Stjepana I. pape i mučenika”) ostaje i
+   dobiva nominativ. Izmjereno simulacijom 1. prolaza `scripts/11` nad `baseline-s2.db`: Bribir
+   (`AP.`) 91,4 → 99,4, Grobnik 92,3 → 100, nijedan spoj izgubljen. Revizija: ako prikaz treba
+   „apostoli” natrag, ide u zaseban stupac, ne u ključ.
+301. **Imena ostaju leksikon, ne pravilo** (komentar u `titular.py`). Dodano 28 genitiva iz baze
+   (`ćirila`, `metoda`, `kvirika`, `julite`, `srđa`, `baha` → Bakho …) i nominativi koje je
+   audit brojao kao genitiv (`ante`, `pavle`, `carica`). Epiteti koji imaju smisla samo uz ime u
+   nominativu (`pape`, `mučenice`, `kraljice`, `srca`, `žalosne`, `gospe`) dižu se samo u nizu
+   (`_SERIES_EPITHETS`), jer bi inače „sv. Silvestra pape” postao miješani „sv. Silvestra Papa”.
+   `head_key` nad svih 9945 naziva u `baseline-s2.db` (stari i novi kod,
+   `scratchpad/keys.py` + `diff.py`): **104 razlike, sve objašnjene** — 21 Tavelić (odluka 302),
+   60 genitiv prvog imena → nominativ (Ćirila 14, Margarite 9, Ladislava 7, Izidora 5 …),
+   20 naslov ispred niza (`sv apostola`/`sv ap`/`sv arhanđela`/`sv mučenika` → ime),
+   1 „SV.SV.”, 2 „Isusova uskrsnuća”. Nijedna druga riječ niza ne ulazi u glavu.
+302. **Sv. Nikola Tavelić ima vlastitu glavu (`sv nikola tavelic`), a „B.” se ne širi u
+   „Biskup”.** Tavelić je drugi svetac istog imena; s istom glavom „ŽUPA SV. NIKOLE B.” u Rijeci
+   bodovala je 90 i biskupa i Tavelića (S2). S glavom Tavelića rijecka župa dobiva „crkva svetog
+   Nikole biskupa” (`w159810306`, score 90), a Repušnica („TEVELIĆA”, tipfeler evidencije,
+   dodan u leksikon) i dalje svoju crkvu (94,4 → 100). Širenje „B.” → „Biskup” izmjereno je i
+   odbačeno: +3 spoja (Rijeka, Metković, Ustrine), ali Čakovec gubi točnu „crkva svetog Nikole”
+   jer bonus +8 digne crkvu iz Novog Sela na Dravi (ista općina, druga župa) na 98 prema 100.
+   „B.” uz Leopolda je Bogdan. Revizija: kad blokiranje po općini prestane miješati naselja.
+303. **Mjesto koje evidencija piše bez zareza skida se u ingestu, ne u matcheru**
+   (`parse(name, place=city)` u `scripts/02` i `03`). Takvih je 75 od 1496 parsanih titulara
+   pravnih osoba („ŽUPA SV. KUZME I DAMJANA POLAČA”, „SV. NIKOLE B. BOŽAVA”). Matcher ključ
+   računa iz naziva bez mjesta, kao i dosad; glava se nikad ne skida. Usput: otok „IŽ” više nije
+   prijedlog „iz” (prijedlozi se uspoređuju s dijakritikom).
+304. **Pravne osobe su u opsegu `titular_genitiv`, ništa se ne izuzima.** Lažno pozitivni iz S1:
+   „Car Konstantin i Carica Elena” je nominativ (leksikon), „sv. Liberana i arheološko
+   nalazište” i „Sv.Mihovile i Sv.Mario” su greške parsera (niz staje na riječi koja nije ime;
+   slijepljeni „Sv.” se odvaja; vokativ „Mihovile” je u leksikonu). Simulacija titulara kako bi ih
+   upisao pipeline (`scratchpad/sim_gen.py` nad `baseline-s2.db`): **0** (crkve 0, pravne
+   osobe 0), polazno 302. Kratice „Dj. i Mč” ostaju (nisu genitiv). Revizija: rebuild.

@@ -34,7 +34,7 @@ from .denomination import (  # noqa: F401 — re-eksport, vidi „Konfesija" ni�
     is_nekatolicka,
 )
 from .normalize import norm_key
-from .titular import _EPITHETS, _KNOWN_NOM, head_key
+from .titular import _EPITHETS, _KNOWN_NOM, _SERIES_EPITHETS, head_key
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -111,10 +111,9 @@ def nekatolicke_zupne_crkve(conn: sqlite3.Connection) -> dict:
 
 # Leksikon padeža iz samog parsera (src/titular.py): ključevi su genitivi,
 # vrijednosti nominativi. Oblik koji je isti u oba padeža (Duje) nije dokaz.
-_GEN_LEKS = ({k for k, v in _KNOWN_NOM.items() if k != v.lower()}
-             | {k for k, v in _EPITHETS.items() if k != v.lower()})
-_NOM_LEKS = ({v.lower() for v in _KNOWN_NOM.values()}
-             | {v.lower() for v in _EPITHETS.values()})
+_LEKS = {**_KNOWN_NOM, **_EPITHETS, **_SERIES_EPITHETS}
+_GEN_LEKS = {k for k, v in _LEKS.items() if k != v.lower()}
+_NOM_LEKS = {v.lower() for v in _LEKS.values()}
 _OZNAKA_SVETCA = re.compile(r"^(sv|svet\w*|bl|blažen\w*)$")
 _VEZNIK = "i"
 

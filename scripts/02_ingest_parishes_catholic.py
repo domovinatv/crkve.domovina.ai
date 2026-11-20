@@ -105,7 +105,8 @@ def run() -> None:
                 kind=kind,
                 religion="christian",
                 denomination="roman_catholic",
-                titular=titular.parse(naziv) if kind in ("zupa", "svetiste") else None,
+                titular=(titular.parse(naziv, place=city)
+                         if kind in ("zupa", "svetiste") else None),
                 oib=oib,
                 diocese=title_case_hr(diocese) if diocese else None,
                 address=street,

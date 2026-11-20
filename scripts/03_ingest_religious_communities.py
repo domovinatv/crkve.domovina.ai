@@ -120,7 +120,7 @@ def run() -> None:
                 kind=kind,
                 religion=rel,
                 denomination=den,
-                titular=titular.parse(naziv),
+                titular=titular.parse(naziv, place=city),
                 oib=oib,
                 diocese=title_case_hr(zajednica) if zajednica else None,
                 community=title_case_hr(zajednica) if zajednica else None,

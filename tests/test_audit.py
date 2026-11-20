@@ -119,6 +119,14 @@ def test_genitiv_u_nizu_hvata(titular, vrsta):
     "sv. Marko",                 # bez veznika: izvan dosega metrike
     "Uznesenje BDM",
     None,
+    # S3: nominativi koje je pravilo „-e"/„-a" krivo brojalo
+    "sv. Car Konstantin i Carica Elena",
+    "sv. Ante i Rok",
+    "sv. Ivan i Pavle",
+    "sv. Mihovil i Mario",
+    "sv. Hermagora i Fortunat",
+    "sv. Juraj Mučenik i Srce Marijino",
+    "sv. Benedikt i Žalosna Gospa",
 ])
 def test_genitiv_u_nizu_propusta(titular):
     assert audit.genitiv_u_nizu(titular) is None

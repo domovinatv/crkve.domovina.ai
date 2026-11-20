@@ -54,7 +54,10 @@ _MYSTERIES = [
     (re.compile(r"(uzvišenj\w*\s+)?(sv\.?|svet\w*)\s+križ\w*", re.I), "Sveti Križ"),
     (re.compile(r"duh\w*\s+svet\w*|(sv\.?|svet\w*)\s+duh\w*", re.I), "Duh Sveti"),
     (re.compile(r"krist\w*\s+kralj\w*", re.I), "Krist Kralj"),
-    (re.compile(r"uskrsnuć\w*\s+isusov\w*|uskrsnuc\w*\s+isusov\w*", re.I), "Uskrsnuće Isusovo"),
+    # Oba reda riječi: evidencija piše i „USKRSNUĆA ISUSOVA" i „ISUSOVA USKRSNUĆA",
+    # OSM „crkva Isusova uskrsnuća" (S3, 2026-11-20).
+    (re.compile(r"uskrsnu[ćc]\w*\s+isusov\w*|isusov\w*\s+uskrsnu[ćc]\w*", re.I),
+     "Uskrsnuće Isusovo"),
     (re.compile(r"svih\s+svetih", re.I), "Svi Sveti"),
     (re.compile(r"pokoj?\w*\s+duš\w*|dušn\w*\s+dan", re.I), "Duše u čistilištu"),
 ]
@@ -89,15 +92,82 @@ _KNOWN_NOM = {
     "grgura": "Grgur", "jeronima": "Jeronim", "ambrozija": "Ambrozije",
     "augustina": "Augustin", "alojzija": "Alojzije", "ignacija": "Ignacije",
     "križa": "Križ", "duha": "Duh", "obitelji": "Obitelj",
+    # S3 (2026-11-20): imena iz nizova „X i Y" koja su ostajala u genitivu
+    # (audit `titular_genitiv`). Svako je izmjereno u bazi, nijedno nije
+    # izvedeno pravilom.
+    "ćirila": "Ćiril", "metoda": "Metod", "kirika": "Kirik", "kvirika": "Kvirik",
+    "julite": "Julita", "feliksa": "Feliks", "fortunata": "Fortunat",
+    "euzebija": "Euzebije", "poliona": "Polion", "mohora": "Mohor",
+    "joakima": "Joakim", "prima": "Prim", "felicijana": "Felicijan",
+    "izidora": "Izidor", "monike": "Monika", "agneze": "Agneza",
+    "margarite": "Margarita", "srđa": "Srđ", "baha": "Bakho",
+    "ladislava": "Ladislav", "kozme": "Kozma", "liberana": "Liberan",
+    "teodora": "Teodor", "jude": "Juda", "mojsija": "Mojsije",
+    "modesta": "Modest", "mihaila": "Mihailo", "gavrila": "Gavrilo",
+    # Nisu genitivi nego oblici koji se u nazivima zatječu: „Mihovile" je
+    # vokativ (OSM „Sv.Mihovile i Sv.Mario"). „Pavle" (srpski nominativ) i
+    # „Ante" su nominativi na -e — upisani kao takvi da ih audit ne broji.
+    "mihovile": "Mihovil", "pavle": "Pavle", "ante": "Ante",
 }
 
 _STOP_AFTER = re.compile(
     r"\s*[,(]|\s+u\s+|\s+na\s+|\s+kod\s+|\s+pri\s+|\s+–\s+|\s+-\s+", re.IGNORECASE
 )
 
+# „Sv.Mario", „SV.SV. ĆIRILA" — oznaka sveca slijepljena s idućom riječi.
+_GLUED_MARK = re.compile(r"\b(sv|bl)\.(?=\w)", re.IGNORECASE)
+# Oznaka sveca UNUTAR niza („Roka i sv. Liberana", „Vida i svetog Jurja") —
+# ne ide u titular, niz je „sv. Rok i Liberan".
+# „Blažene" ovdje nije oznaka: „i Blažene Djevice Marije" je BDM (vidi parse).
+_INNER_MARK = re.compile(r"^(sv\.?|svet\w*)$", re.IGNORECASE)
+_BDM_START = re.compile(_BDM, re.IGNORECASE)
+_QUOTES = "\"'„“”«»"
+_STOP_WORDS = {"u", "na", "kod", "iz"}
 
-def parse(name: str | None) -> str | None:
-    """Izvuci titular iz naziva. Vraća npr. "sv. Marko" ili "Uznesenje BDM"."""
+# Zajednički naslov ISPRED niza („svetih Apostola Petra i Pavla", „Arhanđela
+# Mihaila i Gavrila", „mučenika Srđa i Baha") odnosi se na sve članove niza i
+# pada: glava titulara mora biti prvo IME, inače je „sv apostola" glava i
+# pravoslavni hram ne dijeli ključ ni s jednim „sv. Petar i Pavao" (S3).
+_SERIES_TITLE = {"apostola", "ap", "arhanđela", "arhandela", "arhangela",
+                 "arkanđela", "arkandela", "mučenika", "mucenika"}
+# Zajednički epitet IZA drugog imena niza („Petra i Pavla apostola", „AP.",
+# „KUZME I DAMJANA MM."). U genitivu množine je isti kao u jednini, a izvori
+# ga pišu nedosljedno (s njim, bez njega, iza zareza) — pada, da puni titular
+# bude isti iz svih izvora: „sv. Petar i Pavao" (odluka 300).
+_GROUP_EPITHET = {"apostola", "ap", "apostoli", "mučenika", "mucenika", "mm",
+                  "mučenici", "mucenici"}
+# Prezime koje razlikuje DRUGOG sveca istog imena ide u glavu titulara:
+# sv. Nikola Tavelić (franjevac, † 1391) nije sv. Nikola biskup. S istom
+# glavom su se „ŽUPA SV. NIKOLE B." i obje rijecke crkve bodovale jednako
+# (90/90) i župa je ostala bez crkve (S2 nalaz, S3 ispravak).
+_HEAD_SURNAMES = {"tavelic"}
+
+
+def _is_conj(word: str) -> bool:
+    """„i"/„I" kao veznik. „I." (redni broj: „Stjepana I. pape") nije veznik."""
+    return word in ("i", "I")
+
+
+def _strip_place(words: list[str], place: str | None) -> list[str]:
+    """Skini mjesto s kraja („ŽUPA SV. KUZME I DAMJANA POLAČA", sjedište
+    Polača). Evidencija ga ponekad piše bez zareza; glava ostaje uvijek."""
+    if not place:
+        return words
+    pw = _key_of(place).split()
+    n = len(pw)
+    if n and len(words) > n and [_key_of(w) for w in words[-n:]] == pw:
+        # Kao i bez mjesta: naziv se na kraju čisti od točke („NIKOLE B.").
+        return [*words[:-n - 1], words[-n - 1].rstrip(".,")]
+    return words
+
+
+def parse(name: str | None, place: str | None = None) -> str | None:
+    """Izvuci titular iz naziva. Vraća npr. "sv. Marko" ili "Uznesenje BDM".
+
+    `place` (sjedište pravne osobe) se skida s kraja naziva ako ga evidencija
+    nije odvojila zarezom. Matcher ga ne daje — on uspoređuje glave, a mjesto
+    nikad nije prva riječ.
+    """
     if not name:
         return None
     core = strip_type_prefix(name.strip())
@@ -110,31 +180,91 @@ def parse(name: str | None) -> str | None:
         if pat.search(core):
             return label
 
+    core = _GLUED_MARK.sub(r"\1. ", core)
     m = _SAINT_MARK.search(core)
     if not m:
         return None
     rest = core[m.end():].strip(" .,-")
+    # Ponovljena oznaka: „SV. SV. ĆIRILA I METODA" (bugarska crkvena općina).
+    while (m2 := _SAINT_MARK.match(rest)) and m2.end() and rest[m2.end():].strip(" .,-"):
+        rest = rest[m2.end():].strip(" .,-")
     if not rest:
         return None
 
-    words = rest.split()
-    # Titular je ime + eventualni epitet ("Ivana Krstitelja", "Petra i Pavla").
-    # Uzimamo do 4 riječi, ali stajemo na veznik koji uvodi mjesto.
-    keep: list[str] = []
-    for w in words[:4]:
-        if strip_diacritics(w).lower() in {"u", "na", "kod", "iz"}:
+    words: list[str] = []
+    for w in rest.split():
+        w = w.strip(_QUOTES)
+        if not w:
+            continue
+        # Stajemo na veznik koji uvodi mjesto. Bez skidanja dijakritike:
+        # otok „IŽ" nije prijedlog „iz" („ŽUPA SV. PETRA I PAVLA VELI IŽ").
+        if w.lower() in _STOP_WORDS:
             break
-        keep.append(w)
-    if not keep:
+        words.append(w)
+    words = _strip_place(words, place)
+    # „i sv. Y" → „i Y": oznaka unutar niza ne broji se u duljinu niza.
+    words = [w for i, w in enumerate(words)
+             if not (i and _is_conj(words[i - 1]) and _INNER_MARK.match(w))]
+
+    # Titular je ime + eventualni epitet ("Ivana Krstitelja"): do 4 riječi.
+    # Niz („Petra i Pavla", „Jurja mučenika i Srca Marijina") smije biti dulji:
+    # do 4 riječi iza prvog veznika.
+    conj = next((i for i, w in enumerate(words[:4]) if _is_conj(w)), None)
+    words = words[:4] if conj is None else words[:conj + 4]
+    if conj is not None and conj >= 2 and _low(words[0]) in _SERIES_TITLE:
+        words = words[1:]
+    if not words:
         return None
 
-    head = _to_nominative(keep[0])
-    # Registri pišu sve verzalom ("SV. MARKA EVANĐELISTA") — epitet spusti u
-    # normalan oblik i, gdje je poznat, u nominativ, da titular bude čitljiv
-    # ("sv. Ivan Krstitelj", ne "sv. Ivan Krstitelja").
-    tail = " ".join(_epithet(w) for w in keep[1:]).strip()
-    label = f"sv. {head}" + (f" {tail}" if tail else "")
+    head = _to_nominative(words[0])
+    tail: list[str] = []
+    series = conj is not None
+    seen_conj = after_conj = False
+    names = 1
+    for i, w in enumerate(words[1:], start=1):
+        lw = _low(w)
+        if _is_conj(w):
+            tail.append("i")
+            seen_conj = after_conj = True
+            continue
+        if after_conj:
+            after_conj = False
+            # „ANTUNA PADOVANSKOG I B. D. MARIJE": drugi član niza je BDM.
+            # Bez ovoga „B." postane „Biskup", a „Blažene" se izgubi.
+            if _BDM_START.match(" ".join(words[i:])):
+                tail.append("BDM")
+                break
+            if lw in _EPITHETS or lw in _SERIES_EPITHETS:  # „djevice i mučenice"
+                tail.append(_epithet(w, head, series=True))
+            elif _known(w) or w[:1].isupper():  # drugo ime niza
+                tail.append(_to_nominative(w))
+                names += 1
+            else:
+                # „sv. Liberana i arheološko nalazište": iza veznika nije
+                # ime — niz je gotov, veznik ne pripada titularu.
+                tail.pop()
+                break
+            continue
+        if seen_conj and names >= 2 and lw in _GROUP_EPITHET:
+            continue
+        # Registri pišu sve verzalom ("SV. MARKA EVANĐELISTA") — epitet spusti
+        # u normalan oblik i, gdje je poznat, u nominativ, da titular bude
+        # čitljiv ("sv. Ivan Krstitelj", ne "sv. Ivan Krstitelja").
+        tail.append(_epithet(w, head, series=series))
+    while tail and tail[-1] == "i":
+        tail.pop()
+
+    label = f"sv. {head}" + (f" {' '.join(tail)}" if tail else "")
     return re.sub(r"\s+", " ", label).strip()
+
+
+def _low(word: str) -> str:
+    return word.lower().strip(".,;:")
+
+
+def _known(word: str) -> bool:
+    key = strip_diacritics(_low(word))
+    return any(strip_diacritics(k) == key for k in _KNOWN_NOM)
 
 
 # Epiteti uz svetačko ime, u genitivu → nominativ. Ne utječu na matching
@@ -150,11 +280,34 @@ _EPITHETS = {
     "padovanskog": "Padovanski", "asiškog": "Asiški", "asiskog": "Asiški",
     "sijenske": "Sijenska", "aleksandrijske": "Aleksandrijska",
     "labudske": "Labudska", "bosanske": "Bosanska",
+    # S3 (2026-11-20). „TEVELIĆA" je tipfeler evidencije (Repušnica).
+    # „B." (= biskupa) se NAMJERNO ne širi u „Biskup" (odluka 302): puni
+    # titular nosi bonus +8 u matcheru, pa je u Čakovcu crkva iz drugog
+    # naselja iste općine srušila marginu točnoj (izmjereno: +3 spoja, −1).
+    "tavelića": "Tavelić", "tevelića": "Tavelić", "tadeja": "Tadej",
+    "bogdana": "Bogdan", "mandića": "Mandić",
+    # Već nominativ; upisan da ga audit ne proglasi genitivom („-a").
+    "carica": "Carica",
+}
+
+# Epiteti koji se u nominativ dižu SAMO u nizu „X i Y". Izvan niza ime ispred
+# njih ostaje u genitivu („sv. Silvestra pape", „Djevice Marije Kraljice") i
+# nominativ samo epiteta dao bi mješavinu („sv. Silvestra Papa").
+_SERIES_EPITHETS = {
+    "mučenice": "Mučenica", "mucenice": "Mučenica", "mučenika": "Mučenik",
+    "pape": "Papa", "kraljice": "Kraljica",
+    # Otajstvo kao drugi član niza („sv. Jurja i Srca Marijina").
+    "srca": "Srce", "marijina": "Marijino", "marijinog": "Marijino",
+    "žalosne": "Žalosna", "gospe": "Gospa",
 }
 
 
-def _epithet(word: str) -> str:
+def _epithet(word: str, head: str = "", series: bool = False) -> str:
     raw = word.lower().strip(".,")
+    if raw == "b" and _key_of(head) == "leopold":
+        return "Bogdan"                       # „SV. LEOPOLDA B. MANDIĆA"
+    if series and raw in _SERIES_EPITHETS:
+        return _SERIES_EPITHETS[raw]
     if raw in _EPITHETS:
         return _EPITHETS[raw]
     return word.capitalize() if word.isupper() else word
@@ -188,13 +341,19 @@ def head_key(name: str | None) -> str | None:
     uspoređuje glave (koje se moraju poklapati), a puni titular služi samo kao
     bonus na score. Otajstva ("Uznesenje BDM") nemaju glavu/epitet pa se vraćaju
     cijela.
+
+    Iznimka je prezime koje razlikuje drugog sveca istog imena
+    (`_HEAD_SURNAMES`: „sv. Nikola Tavelić" → "sv nikola tavelic").
     """
     t = parse(name)
     if not t:
         return None
     if not t.startswith("sv. "):
         return _key_of(t)
-    head = t[4:].split(" ", 1)[0]
+    words = t[4:].split()
+    head = words[0]
+    if len(words) > 1 and _key_of(words[1]) in _HEAD_SURNAMES:
+        head = f"{head} {words[1]}"
     return _key_of(f"sv. {head}")
 
 

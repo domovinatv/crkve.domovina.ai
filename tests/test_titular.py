@@ -77,3 +77,102 @@ def test_place_after_comma_is_not_part_of_titular():
     # "OSIJEK" ne smije završiti u titularu — inače se ista župa u dva izvora
     # (jedan s mjestom, drugi bez) ne bi spojila.
     assert parse("ŽUPA SV. ANE, OSIJEK") == parse("Crkva sv. Ane")
+
+
+# --- S3 (2026-11-20): niz „X i Y" cijeli u nominativu ------------------------
+# Oblici su stvarni nazivi iz baze (audit `titular_genitiv`, S1: 302 titulara).
+
+@pytest.mark.parametrize(
+    "name,expected",
+    [
+        # 8 najčešćih oblika iz audita (S1)
+        ("Crkvica Sv. Petra i Pavla", "sv. Petar i Pavao"),
+        ("ŽUPA SV. PETRA I PAVLA, APOSTOLA", "sv. Petar i Pavao"),
+        ("crkvica sv. Kuzme i Damjana", "sv. Kuzma i Damjan"),
+        ("ŽUPA SV. KUZME I DAMJANA", "sv. Kuzma i Damjan"),
+        ("Svetog Filipa i Jakova", "sv. Filip i Jakov"),
+        ("Pravoslavna crkva Svetih Apostola Petra i Pavla", "sv. Petar i Pavao"),
+        ("crkva svetih Fabijana i Sebastijana", "sv. Fabijan i Sebastijan"),
+        ("crkva svetih Petra i Pavla apostola", "sv. Petar i Pavao"),
+        ("konkatedrala svetog Ćirila i Metoda", "sv. Ćiril i Metod"),
+        ("Crkva Sv. Ivana i Pavla", "sv. Ivan i Pavao"),
+        # Ostali oblici istog tipa
+        ("crkva svetih Kvirika i Julite", "sv. Kvirik i Julita"),
+        ("Hram Sv. Arhanđela Mihaila i Gavrila", "sv. Mihailo i Gavrilo"),
+        ("crkva svetih mučenika Srđa i Baha", "sv. Srđ i Bakho"),
+        ("crkva svetih Šimuna i Jude Tadeja", "sv. Šimun i Juda Tadej"),
+        ("Crkva Sv. Ap. Petra i Pavla", "sv. Petar i Pavao"),
+        ("ŽUPA SV. PETRA I PAVLA AP.", "sv. Petar i Pavao"),
+        ("ŽUPA SV. KUZME I DAMJANA MM.", "sv. Kuzma i Damjan"),
+        ("crkva svetog Vida i svetog Jurja", "sv. Vid i Juraj"),
+        ("ŽUPA SV. JURJA I SV. JAKOVA", "sv. Juraj i Jakov"),
+        ('Crkva "sv. Fabijana i sv. Sebastijana"', "sv. Fabijan i Sebastijan"),
+        ('BUGARSKA CRKVENA OPĆINA "SV.SV. ĆIRILA I METODA" - OSIJEK', "sv. Ćiril i Metod"),
+        # „i" veže epitete jednog sveca, ne dva sveca
+        ("ŽUPA SV. KATARINE DJEVICE I MUČENICE", "sv. Katarina Djevica i Mučenica"),
+        ("crkva svetog Stjepana I. pape i mučenika", "sv. Stjepan I. Papa i Mučenik"),
+        ("ŽUPA SV. JURJA MUČENIKA I SRCA MARIJINA", "sv. Juraj Mučenik i Srce Marijino"),
+        ("ŽUPA SV. BENEDIKTA I ŽALOSNE GOSPE", "sv. Benedikt i Žalosna Gospa"),
+        ("ŽUPA SV. ANTUNA PADOVANSKOG I B. D. MARIJE KRALJICE MUČENIKA",
+         "sv. Antun Padovanski i BDM"),
+        ("Kapela sv. Monike i sv. Leopolda Bogdana Mandića u Dankovcu",
+         "sv. Monika i Leopold Bogdan Mandić"),
+        # Bivši lažno pozitivni u auditu
+        ("Crkva sv. Liberana i arheološko nalazište na Gomilama", "sv. Liberan"),
+        ("Sv.Mihovile i Sv.Mario", "sv. Mihovil i Mario"),
+        ("MAKEDONSKA PRAVOSLAVNA CRKVENA OPĆINA SV. CAR KONSTANTIN I CARICA ELENA",
+         "sv. Car Konstantin i Carica Elena"),
+    ],
+)
+def test_parse_niz_u_nominativu(name, expected):
+    assert parse(name) == expected
+
+
+@pytest.mark.parametrize(
+    "name,place,expected",
+    [
+        ("ŽUPA SV. KUZME I DAMJANA POLAČA", "Polača", "sv. Kuzma i Damjan"),
+        # „IŽ" nije prijedlog „iz" (prije se tu rezao naziv)
+        ("ŽUPA SV. PETRA I PAVLA VELI IŽ", "Veli Iž", "sv. Petar i Pavao"),
+        ("ŽUPA SV. IVANA I PAVLA PETRČANE", "Petrčane", "sv. Ivan i Pavao"),
+        ("ŽUPA SV. NIKOLE B. BOŽAVA", "Božava", "sv. Nikola B"),
+        # Glava se nikad ne skida, i kad je jednaka mjestu
+        ("ŽUPA SV. ROKA", "Rok", "sv. Rok"),
+    ],
+)
+def test_parse_skida_mjesto_bez_zareza(name, place, expected):
+    assert parse(name, place=place) == expected
+
+
+def test_niz_ne_mijenja_glavu_prvog_imena():
+    # Matcher uspoređuje glave: drugi član niza ne smije ući u nju.
+    assert head_key("ŽUPA SV. PETRA I PAVLA") == head_key("Crkva sv. Petra") == "sv petar"
+    assert head_key("crkvica sv. Kuzme i Damjana") == "sv kuzma"
+    # Naslov ispred niza nije ime: glava je Petar, kao u katoličkom nazivu.
+    assert head_key("Pravoslavna crkva Svetih Apostola Petra i Pavla") == "sv petar"
+
+
+def test_isusova_uskrsnuca_u_oba_reda_rijeci():
+    assert parse("ŽUPA ISUSOVA USKRSNUĆA") == "Uskrsnuće Isusovo"
+    assert head_key("crkva Isusova uskrsnuća") == head_key("ŽUPA USKRSNUĆA ISUSOVA")
+
+
+def test_nikola_biskup_i_tavelic_su_razliciti_sveci():
+    # S2: „ŽUPA SV. NIKOLE B." (Rijeka) bodovala je 90 i sv. Nikolu biskupa i
+    # sv. Nikolu Tavelića — margina 0, župa bez crkve.
+    zupa = head_key("ŽUPA SV. NIKOLE B.")
+    assert zupa == head_key("crkva svetog Nikole biskupa") == "sv nikola"
+    assert head_key("crkva svetog Nikole Tavelića") == "sv nikola tavelic"
+    assert head_key("ŽUPA SV. NIKOLE TAVELIĆA") == "sv nikola tavelic"
+    assert head_key("ŽUPA SV. NIKOLE TEVELIĆA") == "sv nikola tavelic"   # tipfeler evidencije
+    assert head_key("Crkva sv. Nikole Tavelić") == "sv nikola tavelic"
+
+
+def test_leopold_b_je_bogdan():
+    assert parse("ŽUPA SV. LEOPOLDA B. MANDIĆA") == "sv. Leopold Bogdan Mandić"
+    assert key("ŽUPA SV. LEOPOLDA B. MANDIĆA") == key("crkva svetog Leopolda Bogdana Mandića")
+
+
+def test_epitet_izvan_niza_ostaje_kako_je():
+    # Bez niza ime ostaje u genitivu, pa se ni epitet ne diže (inače miješano).
+    assert parse("crkva sv. Silvestra pape") == "sv. Silvestra pape"
