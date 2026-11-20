@@ -29,7 +29,7 @@ Handoff se mijenja samo prema naprijed: gotovi `SN` se ne prepisuju, služe kao 
 | --- | --- | --- | --- | --- | --- |
 | S0 | Audit + plan | gotovo | 5e8c36c | 126 | audit 2026-11-20; odluke 1–9 |
 | S1 | venv, CLAUDE.md, `make audit`, reproducibilnost | gotovo | ce64541 | 177 | `make rebuild` 2× identičan; nekat. 72, genitiv 302, konf. 1175, dupl. 40, places 991; odluke 100–105 |
-| S2 | Konfesija: normalizacija + pravilo matchera | otvoreno | | | |
+| S2 | Konfesija: normalizacija + pravilo matchera | gotovo | 555c02a | 271 | nekat. 72→0, nekat. župne 2→0, konf. 1175→0; sa župom 2929→2857; odluke 200–206 |
 | S3 | Titulari + sitnice | otvoreno | | | |
 | S4 | Node+way duplikati | otvoreno | | | |
 | S5 | DGU umjesto Placesa | otvoreno | | | |

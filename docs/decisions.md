@@ -80,3 +80,35 @@ novom koja se poziva na staru. Blokovi: S0 1–99, S1 100–199, S2 200–299 �
    offline one ostaju bez Places pogotka (sve imaju `naselje-centroid`). `make clean-db` ide
    prvi u `all`/`all-places`, jer `10_match_heritage` na spojenoj bazi ostavi 1115 spojenih zapisa u `heritage_unmatched` i izgubi
    840 `year_built` (nije ponovljiv, otvoreno za S7).
+
+## S2 (2026-11-20)
+
+200. **`catholic` → `roman_catholic` bez iznimke.** Izmjereno: od 1022 takve građevine nijedna
+   nije spojena na Križevačku eparhiju (njezinih 14 spojenih: 13 `greek_catholic`, 1
+   `roman_catholic`); jedina u grkokatoličkom kraju (Kostanjevac, Žumberak) spojena je na
+   rimokatoličku župu. Revizija: svjež ingest donese `catholic` u eparhiji.
+201. **Nepoznata ili proturječna konfesija postaje NULL, ne pretpostavka.** `X;orthodox` zadržava
+   konkretni X; vrijednost koja kaže samo „nije katolička” (`episcopal`, `church_of_christ`)
+   postaje `protestant`. Mapiranje i brojke: `docs/research/2026-11-20-s2-konfesija.md`.
+202. **Pravilo konfesije (odluka 4) u `scripts/11`:** u 1. prolazu filtrira kandidate prije
+   scoreanja; u 2. prolazu (filijale) samo odbija vezu, a jedinstvenost se i dalje broji nad svim
+   pravnim osobama u mjestu. Filtar prije brojanja u 2. prolazu dodao je 190 filijala (sinagoge,
+   džamije, JW na SPC općine), jer pravilo čuva samo katoličku granicu.
+203. **`building=mosque|synagogue` popušta kršćanskom nazivu, religiji ili konfesiji** (`kinds.py`).
+   Tag opisuje zgradu, ne današnju namjenu. Promijenila su se točno 3 kinda (Đakovo Svih Svetih,
+   pentekostna crkva u bivšoj sinagogi u Osijeku, Daruvarski Brestovac → `pravoslavna-crkva`);
+   nijedna stvarna džamija ni sinagoga.
+204. **`old_catholic` je za spajanje nekatolička**, iako je u odluci 101 popisana među
+   katoličkima (skup dozvoljenih vrijednosti se ne mijenja). Starokatolička crkva nije u
+   zajedništvu s Rimom i ima vlastite pravne osobe u evidenciji vjerskih zajednica.
+205. **„Slab zahtjev” ide zadnji u 1. prolazu `scripts/11`** (`match.weak_claim`: pravna osoba
+   imenuje sveca, građevina ne). Ne odbija se, samo mijenja redoslijed. Razlog: Trsat
+   (`r3560310`, naziv bez sveca) je nakon odspajanja pravoslavnog sv. Nikole otišao na
+   „FRANJEVAČKI SAMOSTAN SV. NIKOLE” 4,5 km dalje; s pravilom je opet na „… RIJEKA - TRSAT”, a
+   usput su ispravljeni Sesvete i zagrebački „Samostan”.
+206. **Pravoslavne pravne osobe se u S2 ne spajaju.** Matcher po nazivu spaja 7 od 434 (svih 7
+   manastira, točno), jer crkvene općine nemaju sveca u nazivu. Varijanta po naselju (općina X ↔
+   jedina pravoslavna građevina u naselju X) daje 172 para, uzorak 20 (seed 20261120): 17 točno,
+   0 krivo, 3 nejasno. To je zasebna stavka poslije S3, zajedno s 14 građevina nepoznate
+   konfesije koje 2. prolaz danas veže na SPC općine (neke po nazivu katoličke). Revizija: kad
+   se stavka uzme.

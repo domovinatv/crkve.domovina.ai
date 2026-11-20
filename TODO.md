@@ -18,19 +18,22 @@ Legenda: `[x]` gotovo · `[ ]` otvoreno · `[~]` u radu · `(!)` traži korisnik
 
 ## F1 — ispravci u pipelineu (lokalno, bez deploya)
 
-- [ ] `src/denomination.py`: normalizacija konfesije (`catholic`→`roman_catholic`, `orthodox` uz pravoslavni kind → `serbian_orthodox` samo gdje je dokazivo, smeće → NULL); `audit.konfesija_nenormalizirana = 0` → S2
-- [ ] Matcher (`src/match.py`, `scripts/11`): građevina se spaja samo na pravnu osobu kompatibilne konfesije; `audit.nekatolicke_na_katolickim = 0` → S2
-- [ ] Rijeka, sv. Nikola (`svetog-nikole-rijeka-w437197445`) nije župna crkva katoličke župe; test koji to drži → S2
+- [x] `src/denomination.py`: normalizacija konfesije (`catholic`→`roman_catholic`, `orthodox` uz pravoslavni kind → `serbian_orthodox` samo gdje je dokazivo, smeće → NULL); `audit.konfesija_nenormalizirana = 0` → S2
+- [x] Matcher (`src/match.py`, `scripts/11`): građevina se spaja samo na pravnu osobu kompatibilne konfesije; `audit.nekatolicke_na_katolickim = 0` → S2
+- [x] Rijeka, sv. Nikola (`svetog-nikole-rijeka-w437197445`) nije župna crkva katoličke župe; test koji to drži → S2
 - [ ] `titular.py`: drugo ime u nizu „X i Y” u nominativ (`sv. Petar i Pavao`); `audit.titular_genitiv = 0`, testovi za 8 izmjerenih oblika → S3
-- [ ] Đakovo, Svih Svetih: `kind = crkva` (ime pobjeđuje tag `building=mosque` kad ime kaže crkva) → S3
+- [x] Đakovo, Svih Svetih: `kind = crkva` (ime pobjeđuje tag `building=mosque` kad ime kaže crkva) → S2 (odluka 203)
 - [ ] Križevačka eparhija `kind = eparhija` → S3
 - [ ] `parish_count_razlika`: podatak je točan (aktivne+različite; odluka 104) — uskladi metriku i prikaz u `34`, ne broj → S3
 - [ ] `Q132087369` na dvije nepovezane građevine: provjereno na Wikidati, krivi zapis odspojen → S3
 - [ ] Engleski nazivi (32 po `make audit`: 20 Wikidata, 12 OSM): odluka i provedba (hr naziv iz `name:hr`/Wikidate, inače ostaje) → S3
+- [ ] Titular „B.” (ŽUPA SV. NIKOLE B., Rijeka) i obrnuti red „Isusova uskrsnuća” u `head_key`; Rijeka sv. Nikola nema nijednu građevinu → S3
+- [ ] `scripts/03`: 20 „MANASTIR” zapisa klasificirano kao `eparhija` → S3
+- [ ] Pravoslavne pravne osobe: spajanje po naselju (172 jednoznačna para, uzorak 20: 17 točno, 0 krivo, 3 nejasno) + 14 građevina nepoznate konfesije koje prolaz 2 veže na SPC općine; zasebna stavka poslije S3 (odluka 206) → otvoreno
 - [ ] Node+way duplikati iste zgrade spojeni u jedan zapis (tlocrt pobjeđuje, ID-jevi oba sačuvani); `audit.node_way_duplikati = 0` uz popis namjerno ostavljenih → S4
 - [ ] Slug spojenog duplikata: stari URL ne smije dati 404 (redirect ili alias) → S4
 
-- [ ] Đakovo Svih Svetih (`kind=dzamija`) blokira `nekatolicke_zupne_crkve = 0` u S2 — S2 ispravlja kind ili čeka S3 → S2
+- [x] Đakovo Svih Svetih (`kind=dzamija`) blokira `nekatolicke_zupne_crkve = 0` u S2 — S2 ispravlja kind ili čeka S3 → S2
 
 ## F2 — koordinate bez Googlea
 
