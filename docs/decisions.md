@@ -176,3 +176,12 @@ novom koja se poziva na staru. Blokovi: S0 1–99, S1 100–199, S2 200–299 �
    `OVERLAPPING_SLUGS` (ostaje kao druga brava). Export `biskupije.*` nosi `kind` doslovno;
    frontend ne filtrira po vrsti (`/biskupije` dijeli po `has_area`, `/biskupija/$slug` ispisuje
    `kind` kao oznaku), pa samo oznaka postaje „eparhija”.
+307. **`parish_count_razlika` mjeri prema aktivnim i različitim župama** (`stats.AKTIV`, ista
+   definicija kao `zupe_aktivne`), a broj zapisa ide u `razlika_prema_zapisima` kao kontekst.
+   Podatak se ne mijenja (odluka 104). `make audit` na S2 bazi: **0** (prije 2: Gospić/Prizna,
+   Šibenik/Prgomet). Export i frontend nigdje ne prikazuju broj svih zapisa: `scripts/34` izvozi
+   samo aktivne i različite pravne osobe (`PARISH_SQL`), `/biskupija/$slug` ispisuje
+   `parishes.length` („N pravnih osoba u katalogu”: župe + samostani + svetišta, npr. Zagrebačka
+   285 naprema `parish_count` 206), a `/biskupije` u bloku „Ostale zajednice” ispisuje
+   `parish_count` s oznakom „pravne osobe”, što je za Križevačku eparhiju (35) zapravo broj župa.
+   To je oznaka u frontendu, ne broj: prijavljeno, nije mijenjano (`frontend/` izvan opsega S3).

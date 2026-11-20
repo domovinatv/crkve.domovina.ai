@@ -358,13 +358,15 @@ def places_koordinate_u_exportu(conn: sqlite3.Connection,
 
 
 # ---------------------------------------------------------------------------
-# 6. dioceses.parish_count ≠ broj župa u tablici parishes
+# 6. dioceses.parish_count ≠ broj aktivnih i različitih župa u tablici parishes
 # ---------------------------------------------------------------------------
 
 def parish_count_razlika(conn: sqlite3.Connection) -> dict:
-    """Uspoređuje s brojem ZAPISA `kind='zupa'` (to vidi čitatelj popisa
-    župa biskupije), a uz svaku razliku piše i broj aktivnih i različitih
-    (`src.stats.AKTIV`) — `parish_count` iz scripts/02 broji upravo njih."""
+    """Uspoređuje s brojem AKTIVNIH i različitih župa (`src.stats.AKTIV`, ista
+    definicija kao `zupe_aktivne`) — upravo to `parish_count` iz scripts/02
+    broji (odluka 104). Broj ZAPISA `kind='zupa'` (uključuje ugašenu Priznu i
+    duplikat Prgomet) ide uz svaku razliku i u `razlika_prema_zapisima`, kao
+    kontekst; metrika ga ne cilja (odluka 307)."""
     rows = conn.execute(
         "SELECT d.slug, d.parish_count, "
         " (SELECT COUNT(*) FROM parishes p WHERE p.diocese = d.name AND p.kind = 'zupa') n, "
@@ -373,12 +375,12 @@ def parish_count_razlika(conn: sqlite3.Connection) -> dict:
         "FROM dioceses d WHERE d.denomination IN ({}) ORDER BY d.slug".format(
             ", ".join(f"'{x}'" for x in sorted(KATOLICKE)))
     ).fetchall()
-    diff = [r for r in rows if (r["parish_count"] or 0) != r["n"]]
+    diff = [r for r in rows if (r["parish_count"] or 0) != r["aktivne"]]
     return {
         "value": len(diff),
-        "razlika_prema_aktivnima": sum(1 for r in rows if (r["parish_count"] or 0) != r["aktivne"]),
-        "examples": [f"{r['slug']}: parish_count {r['parish_count']}, zapisa {r['n']}, "
-                     f"aktivnih {r['aktivne']}" for r in diff],
+        "razlika_prema_zapisima": sum(1 for r in rows if (r["parish_count"] or 0) != r["n"]),
+        "examples": [f"{r['slug']}: parish_count {r['parish_count']}, aktivnih {r['aktivne']}, "
+                     f"zapisa {r['n']}" for r in diff],
     }
 
 
@@ -479,7 +481,7 @@ METRICS: list[Metric] = [
     ("places_koordinate_u_exportu", places_koordinate_u_exportu,
      "župe s koordinatama iz Google Placesa (idu u javne exporte)"),
     ("parish_count_razlika", parish_count_razlika,
-     "katolička biskupija: parish_count ≠ broj zapisa kind='zupa'"),
+     "katolička biskupija: parish_count ≠ broj aktivnih i različitih župa"),
     ("wikidata_dijeljen", wikidata_dijeljen,
      "isti wikidata_id na više građevina"),
     ("engleski_nazivi", engleski_nazivi,

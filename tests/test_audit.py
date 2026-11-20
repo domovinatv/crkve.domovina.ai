@@ -238,13 +238,18 @@ def test_parish_count_razlika(db):
     parish(db, "g2", diocese="Gospićko-senjska Biskupija", registry_status="PRESTANAK")
     parish(db, "k1", diocese="Biskupija Krk")
     parish(db, "k2", diocese="Biskupija Krk")
+    parish(db, "k3", diocese="Biskupija Krk", duplicate_of=1)   # isti subjekt dvaput
     # zajednica: parish_count broji org. oblike, ne župe — ne uspoređuje se
     _ins(db, "dioceses", slug="spc", name="SPC", kind="zajednica",
          denomination="serbian_orthodox", parish_count=400)
     m = audit.parish_count_razlika(db)
+    # Ugašena (Gospić) i duplikat (Krk) nisu razlika: parish_count broji aktivne.
+    assert m["value"] == 0 and m["examples"] == []
+    assert m["razlika_prema_zapisima"] == 2
+    db.execute("UPDATE dioceses SET parish_count = 5 WHERE slug = 'krk'")
+    m = audit.parish_count_razlika(db)
     assert m["value"] == 1
-    assert m["razlika_prema_aktivnima"] == 0
-    assert m["examples"] == ["gospic: parish_count 1, zapisa 2, aktivnih 1"]
+    assert m["examples"] == ["krk: parish_count 5, aktivnih 2, zapisa 3"]
 
 
 # --- 7. dijeljen wikidata_id -------------------------------------------------
