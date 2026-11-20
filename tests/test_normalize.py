@@ -62,3 +62,26 @@ def test_norm_key_unifies_saint_forms():
 )
 def test_title_case_hr(raw, expected):
     assert title_case_hr(raw) == expected
+
+
+# --- S3: hrvatski naziv umjesto engleskog (odluka 309) -----------------------
+
+def test_hrvatski_naziv_iz_osm_name_hr():
+    from src.normalize import hrvatski_naziv
+    # OSM way 782348025, Rovinj (keš Overpassa)
+    assert hrvatski_naziv("Church Of Saint Concetta", "Crkvica Bezgrešnog Začeća") \
+        == "Crkvica Bezgrešnog Začeća"
+    # Hrvatski naziv se ne dira ni kad postoji name:hr
+    assert hrvatski_naziv("Crkva sv. Ivana", "Sv. Ivan") == "Crkva sv. Ivana"
+    # Bez hrvatskog kandidata engleski ostaje (nema izmišljenog prijevoda)
+    assert hrvatski_naziv("Kingdom Hall", None) == "Kingdom Hall"
+    assert hrvatski_naziv("St. Martin", "St. Martin") == "St. Martin"
+
+
+def test_wiki_title_iz_clanka_hr_wikipedije():
+    from src.normalize import hrvatski_naziv, wiki_title
+    url = "https://hr.wikipedia.org/wiki/Crkva_hrvatskih_mu%C4%8Denika"   # Q5116856
+    assert wiki_title(url) == "Crkva hrvatskih mučenika"
+    assert hrvatski_naziv("Church of Croatian Martyrs", wiki_title(url)) \
+        == "Crkva hrvatskih mučenika"
+    assert wiki_title(None) is None

@@ -103,3 +103,49 @@ def title_case_hr(s: str) -> str:
         else:
             out.append(w.capitalize())
     return " ".join(out)
+
+
+# Engleski naziv = sadrži englesku sakralnu riječ ili „St." ispred imena.
+# „St." samo ispred velikog slova: „XVII st." je hrvatsko „stoljeće".
+# Mjera je `audit.engleski_nazivi`; pravilo je `hrvatski_naziv` (odluka 309).
+_ENGLESKI = re.compile(
+    r"\b(church|chapel|monastery|cathedral|synagogue|mosque|saint|statue|remains|"
+    r"summit|kingdom\s+hall)\b|\bSt\.?\s+[A-Z]",
+    re.IGNORECASE,
+)
+_ST = re.compile(r"\bSt\.?\s+[A-Z]")
+
+
+def je_engleski(name: str | None) -> bool:
+    if not name:
+        return False
+    for m in _ENGLESKI.finditer(name):
+        if m.group(1) or _ST.match(name, m.start()):
+            return True
+    return False
+
+
+def hrvatski_naziv(name: str | None, *hr: str | None) -> str | None:
+    """Prvi hrvatski naziv iz `hr` ako je `name` engleski, inače `name`.
+
+    `hr` su kandidati redom pouzdanosti (OSM `name:hr`; naslov članka na
+    hr.wikipediji). Kandidat koji je i sam engleski se preskače. Bez
+    kandidata engleski naziv ostaje — izmišljeni prijevod bio bi gori.
+    """
+    if not je_engleski(name):
+        return name
+    for h in hr:
+        if h and h.strip() and not je_engleski(h):
+            return h.strip()
+    return name
+
+
+def wiki_title(url: str | None) -> str | None:
+    """'https://hr.wikipedia.org/wiki/Crkva_hrvatskih_mu%C4%8Denika' →
+    'Crkva hrvatskih mučenika'. Naslov hr.wikipedije je hrvatski naziv
+    objekta kad Wikidata nema hrvatski label (`scripts/05`)."""
+    if not url or "/wiki/" not in url:
+        return None
+    from urllib.parse import unquote
+
+    return unquote(url.rsplit("/wiki/", 1)[1]).replace("_", " ").strip() or None

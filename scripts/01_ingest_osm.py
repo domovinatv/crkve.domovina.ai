@@ -33,7 +33,7 @@ sys.path.insert(0, str(ROOT))
 from src import geo_hr, kinds, osm_fixes, titular  # noqa: E402
 from src.denomination import normalize_denomination  # noqa: E402
 from src.db import add_alias, connect, merge_source  # noqa: E402
-from src.normalize import slugify  # noqa: E402
+from src.normalize import hrvatski_naziv, slugify  # noqa: E402
 from src.overpass import latlng, query  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -99,10 +99,16 @@ def run() -> None:
             if place.settlement:
                 stats["s_naseljem"] += 1
 
+            # Slug iz `name` taga, PRIJE izbora hrvatskog naziva: slug je URL
+            # (odluka 309), a sufiks OSM id ionako nosi identitet.
             slug = slugify(
                 name, city or place.settlement or place.municipality,
                 suffix=f"{osm_type[0]}{osm_id}",
             )
+            # Engleski `name` s hrvatskim `name:hr` („Church Of Saint Concetta"
+            # / „Crkvica Bezgrešnog Začeća", Rovinj): prikazuje se hrvatski.
+            name_tag = name
+            name = hrvatski_naziv(name, t.get("name:hr"))
 
             existing = conn.execute(
                 "SELECT id, source FROM churches WHERE osm_type = ? AND osm_id = ?",
@@ -164,6 +170,8 @@ def run() -> None:
             for key in ("alt_name", "official_name", "old_name", "name:hr", "name:it"):
                 if t.get(key) and t[key] != name:
                     add_alias(conn, church_id, t[key], f"osm:{key}")
+            if name_tag != name:
+                add_alias(conn, church_id, name_tag, "osm:name")
 
             kind_counts[kind] += 1
             stats["ok"] += 1

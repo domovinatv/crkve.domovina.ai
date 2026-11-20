@@ -199,3 +199,15 @@ novom koja se poziva na staru. Blokovi: S0 1–99, S1 100–199, S2 200–299 �
    nakon rebuilda: `wikidata_dijeljen` **3** (samo parovi crkva + samostan). Slug se ne mijenja
    (sufiks je OSM id). Otvoreno: `_nearest` smije dati entitet građevini koja već nosi DRUGI
    Wikidata Q — opće pravilo nije uvedeno jer ga bez rebuilda nije moguće izmjeriti.
+309. **Engleski naziv zamjenjuje se samo hrvatskim iz izvora, a slug ostaje iz izvornog naziva.**
+   `normalize.hrvatski_naziv` (ista `je_engleski` kojom mjeri audit, preseljena iz `audit.py`):
+   OSM `name:hr` u `scripts/01`, naslov članka na hr.wikipediji u `scripts/05` (label je
+   `"hr,en"`, pa engleski znači da hrvatskog labela nema). Izmjereno u kešu (`data/raw/osm`,
+   `data/raw/wikidata`): od 32 engleska naziva hrvatski postoji za **2** — Rovinj
+   (`w782348025`, `name:hr` „Crkvica Bezgrešnog Začeća”) i Ružić (Q5116856, „Crkva hrvatskih
+   mučenika”); ostalih 30 nema ni `name:hr` ni hr članak i ostaju (popis:
+   `docs/research/2026-11-20-s3-titulari.md`). Slug se računa iz izvornog naziva **prije**
+   zamjene, pa se nijedan URL ne mijenja (sufiks OSM id / Q nosi identitet); engleski naziv ide u
+   `church_aliases` (`osm:name`). Za Wikidata zapis vrsta se čita iz hrvatskog naziva
+   (Ružić: `ostalo` → `crkva`). Očekivano nakon rebuilda: `engleski_nazivi` 30 (wikidata 19,
+   osm 11). Revizija: svjež ingest (S7) — Wikidata labeli se dopunjuju.

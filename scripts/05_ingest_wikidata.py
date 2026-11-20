@@ -25,7 +25,7 @@ sys.path.insert(0, str(ROOT))
 
 from src import geo_hr, kinds, titular, wikidata  # noqa: E402
 from src.db import connect, merge_source  # noqa: E402
-from src.normalize import slugify  # noqa: E402
+from src.normalize import hrvatski_naziv, slugify, wiki_title  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("wikidata")
@@ -121,9 +121,14 @@ def run() -> None:
                 continue
 
             # Nema para — nova građevina samo iz Wikidate.
-            kind = kinds.classify({}, name)
             place = geo_hr.locate(lat, lng)
             slug = slugify(name, r.get("adminLabel") or place.settlement, suffix=q.lower())
+            # Label je „hr,en": bez hrvatskog labela dođe engleski („Church of
+            # Croatian Martyrs"). Naslov članka na hr.wikipediji je hrvatski
+            # naziv; slug ostaje iz labela jer je URL (odluka 309). Vrsta se
+            # čita iz hrvatskog naziva — klasifikator ne zna engleski.
+            name = hrvatski_naziv(name, wiki_title(r.get("article")))
+            kind = kinds.classify({}, name)
             conn.execute(
                 """
                 INSERT INTO churches

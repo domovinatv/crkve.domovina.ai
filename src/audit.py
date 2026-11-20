@@ -33,7 +33,7 @@ from .denomination import (  # noqa: F401 — re-eksport, vidi „Konfesija" ni�
     NEKRSCANSKE_RELIGIJE,
     is_nekatolicka,
 )
-from .normalize import norm_key
+from .normalize import je_engleski, norm_key
 from .titular import _EPITHETS, _KNOWN_NOM, _SERIES_EPITHETS, head_key
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -410,23 +410,9 @@ def wikidata_dijeljen(conn: sqlite3.Connection) -> dict:
 # 8. Sitnice: engleski nazivi, građevine bez županije, filijale daleko od župe
 # ---------------------------------------------------------------------------
 
-# Engleski naziv = sadrži englesku sakralnu riječ ili „St." ispred imena.
-# „St." samo ispred velikog slova: „XVII st." je hrvatsko „stoljeće".
-_ENGLESKI = re.compile(
-    r"\b(church|chapel|monastery|cathedral|synagogue|mosque|saint|statue|remains|"
-    r"summit|kingdom\s+hall)\b|\bSt\.?\s+[A-Z]",
-    re.IGNORECASE,
-)
-_ST = re.compile(r"\bSt\.?\s+[A-Z]")
-
-
-def je_engleski(name: str | None) -> bool:
-    if not name:
-        return False
-    for m in _ENGLESKI.finditer(name):
-        if m.group(1) or _ST.match(name, m.start()):
-            return True
-    return False
+# Definicija engleskog naziva je u src/normalize.py (`je_engleski`): ista
+# funkcija bira hrvatski naziv u ingestu (scripts/01, 05), pa mjera i pravilo
+# nisu dvije definicije.
 
 
 def engleski_nazivi(conn: sqlite3.Connection) -> dict:
