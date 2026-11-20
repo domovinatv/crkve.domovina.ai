@@ -57,4 +57,4 @@ bez kvote) u S5 i svjež ingest u S7. Google Places se u ovom lancu ne poziva.
 
 ## Gdje smo
 
-S0 (2026-11-20): audit napravljen, plan napisan, koda nema.
+S0 (2026-11-20, 5e8c36c): audit napravljen, plan napisan, koda nema. Sljedeća je S1.

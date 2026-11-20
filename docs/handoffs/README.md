@@ -27,7 +27,7 @@ Handoff se mijenja samo prema naprijed: gotovi `SN` se ne prepisuju, služe kao 
 
 | Sesija | Paket | Stanje | Commit | Testovi | Napomena |
 | --- | --- | --- | --- | --- | --- |
-| S0 | Audit + plan | gotovo | (upisuje S0) | 126 | audit 2026-11-20; odluke 1–9 |
+| S0 | Audit + plan | gotovo | 5e8c36c | 126 | audit 2026-11-20; odluke 1–9 |
 | S1 | venv, CLAUDE.md, `make audit`, reproducibilnost | otvoreno | | | |
 | S2 | Konfesija: normalizacija + pravilo matchera | otvoreno | | | |
 | S3 | Titulari + sitnice | otvoreno | | | |
