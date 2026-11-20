@@ -163,7 +163,7 @@ def test_daleko_od_svih_kandidata_brise_koordinatu(fake_index):
         s("Prgomelje", "Pakrac", "Požeško-slavonska", 17, 45),
         s("Prgomelje", "Bjelovar", "Bjelovarsko-bilogorska", 16, 45),
     ])
-    row = Row(registry_id="701807", diocese="Križevačka Eparhija",
+    row = Row(registry_id="701807", diocese="Križevačka eparhija",
               city="Prgomelje", lat=42.65, lng=18.09)
     out = pg.resolve(row, {})
     assert isinstance(out, pg.Drop)

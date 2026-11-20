@@ -130,3 +130,20 @@ def test_to_geojson_geometry_zaokruzuje_na_6_decimala():
 def test_kind_of_eparhija_nije_biskupija(name, kind):
     """S3: evidencija vodi grkokatoličku eparhiju u stupcu biskupija."""
     assert dio.kind_of(name) == kind
+
+
+@pytest.mark.parametrize("raw,name,slug", [
+    ("ZAGREBAČKA NADBISKUPIJA", "Zagrebačka nadbiskupija", "zagrebacka-nadbiskupija"),
+    ("DUBROVAČKA BISKUPIJA - DIOECESIS RAGUSINA", "Dubrovačka biskupija",
+     "dubrovacka-biskupija-dioecesis-ragusina"),
+    ("KRIŽEVAČKA EPARHIJA", "Križevačka eparhija", "krizevacka-eparhija"),
+    ("BISKUPIJA KRK", "Biskupija Krk", "biskupija-krk"),
+    ("ĐAKOVAČKO-OSJEČKA NADBISKUPIJA", "Đakovačko-osječka nadbiskupija",
+     "dakovacko-osjecka-nadbiskupija"),
+])
+def test_display_name_ne_dira_slug(raw, name, slug):
+    """S3 (odluka 310): naziv se uljepšava, slug (URL, boje na karti) ostaje
+    iz sirovog naziva evidencije."""
+    from src.normalize import slugify
+    assert dio.display_name(raw) == name
+    assert slugify(raw) == slug

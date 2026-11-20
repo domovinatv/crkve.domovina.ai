@@ -31,6 +31,7 @@ sys.path.insert(0, str(ROOT))
 from src import titular  # noqa: E402
 from src.datagovhr import KATOLICKE_PRAVNE_OSOBE, fetch, split_sjediste  # noqa: E402
 from src.db import connect, mark_duplicates, merge_source, upsert_diocese, upsert_parish  # noqa: E402
+from src.dioceses import display_name as diocese_name  # noqa: E402
 from src.dioceses import kind_of as diocese_kind  # noqa: E402
 from src.normalize import slugify, title_case_hr  # noqa: E402
 
@@ -68,6 +69,9 @@ def run() -> None:
     log.info("zapisa u evidenciji: %d", len(rows))
 
     stats = Counter()
+    # Prikazni naziv biskupije → slug iz SIROVOG naziva evidencije. Slug je URL
+    # i ključ boja na karti; naziv se smije uljepšati, slug ne (odluka 310).
+    diocese_slug: dict[str, str] = {}
     with connect() as conn:
         for r in rows:
             naziv = (r.get("NAZIV") or "").strip()
@@ -100,6 +104,8 @@ def run() -> None:
                 slug = existing["slug"]
 
             diocese = (r.get("BISKUPIJA_NADBISKUPIJA") or "").strip() or None
+            if diocese:
+                diocese_slug.setdefault(diocese_name(diocese), slugify(diocese))
 
             parish_id = upsert_parish(
                 conn,
@@ -112,7 +118,7 @@ def run() -> None:
                 titular=(titular.parse(naziv, place=city)
                          if kind in ("zupa", "svetiste") else None),
                 oib=oib,
-                diocese=title_case_hr(diocese) if diocese else None,
+                diocese=diocese_name(diocese) if diocese else None,
                 address=street,
                 city=city,
                 registry_no=(r.get("EVIDENCIJSKI_BROJ") or "").strip() or None,
@@ -130,7 +136,7 @@ def run() -> None:
                 upsert_diocese(
                     conn,
                     slugify(naziv),
-                    title_case_hr(naziv),
+                    diocese_name(naziv),
                     kind=diocese_kind(naziv),
                     religion="christian",
                     denomination="roman_catholic",
@@ -151,7 +157,7 @@ def run() -> None:
             d = row["diocese"]
             upsert_diocese(
                 conn,
-                slugify(d),
+                diocese_slug.get(d) or slugify(d),
                 d,
                 kind=diocese_kind(d),
                 religion="christian",

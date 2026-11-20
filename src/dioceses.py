@@ -47,6 +47,28 @@ logger = logging.getLogger(__name__)
 OVERLAPPING_SLUGS = {"krizevacka-eparhija"}
 
 
+_RANK_WORDS = {"nadbiskupija", "biskupija", "eparhija"}
+
+
+def display_name(raw: str) -> str:
+    """Naziv (nad)biskupije za prikaz i za `parishes.diocese` (ključ spajanja s
+    `dioceses.name`, pa se OBA pišu ovom funkcijom).
+
+    Evidencija piše verzalom i s latinskim dodatkom: „DUBROVAČKA BISKUPIJA -
+    DIOECESIS RAGUSINA" → „Dubrovačka biskupija"; „ZAGREBAČKA NADBISKUPIJA" →
+    „Zagrebačka nadbiskupija". Riječ biskupija/nadbiskupija/eparhija ostaje
+    velika samo na početku („Biskupija Krk"). Slug se NE računa iz ovoga
+    nego iz sirovog naziva (odluka 310) — URL /biskupija/<slug> i boje na
+    karti (karta-web `DIOCESE_COLORS`) vežu se na slug.
+    """
+    from .normalize import title_case_hr
+
+    name = title_case_hr(raw.split(" - ", 1)[0].strip())
+    words = name.split(" ")
+    return " ".join(w.lower() if i and w.lower() in _RANK_WORDS else w
+                    for i, w in enumerate(words))
+
+
 def kind_of(name: str) -> str:
     """`dioceses.kind` za naziv iz evidencije Katoličke Crkve.
 

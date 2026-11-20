@@ -211,3 +211,15 @@ novom koja se poziva na staru. Blokovi: S0 1–99, S1 100–199, S2 200–299 �
    `church_aliases` (`osm:name`). Za Wikidata zapis vrsta se čita iz hrvatskog naziva
    (Ružić: `ostalo` → `crkva`). Očekivano nakon rebuilda: `engleski_nazivi` 30 (wikidata 19,
    osm 11). Revizija: svjež ingest (S7) — Wikidata labeli se dopunjuju.
+310. **Naziv biskupije se uljepšava, slug ostaje iz sirovog naziva evidencije.**
+   `dioceses.display_name`: „Zagrebačka nadbiskupija”, „Dubrovačka biskupija” (latinski dodatak
+   iza „ - ” pada), „Križevačka eparhija”; riječ (nad)biskupija/eparhija velika je samo na
+   početku („Biskupija Krk”). Piše se u `dioceses.name` **i** `parishes.diocese` jer su to ključ
+   spajanja (`scripts/20`, `34`, audit), a `parish_geo._SKIP_DIOCESE` je usklađen. Slug se računa
+   iz sirovog naziva (`scripts/02`, `diocese_slug`): provjereno nad S2 bazom, svih 16 katoličkih
+   slugova ostaje isto (`slugify(sirovi) == slug`), uključujući
+   `dubrovacka-biskupija-dioecesis-ragusina`, na koji se vežu `/biskupija/<slug>` i boje u
+   karta-web (`DIOCESE_COLORS`). Mijenja se samo tekst: oznaka biskupije u
+   `zupe-index.json`/`zupa/<slug>.json`, koju `listici.domovina.ai` preuzima kao prikaz (ključ mu
+   je slug župe, odluka iz CLAUDE.md). Nekatoličke zajednice (`scripts/03`) se ne diraju.
+   Revizija: ako se ikad odluči i za čisti slug Dubrovačke, to je preusmjeravanje URL-a, ne ovo.

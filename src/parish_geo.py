@@ -134,7 +134,7 @@ MIN_ZUPA_PO_ZUPANIJI = 1
 MAX_SJEDISTE_KM = 30.0
 
 # Biskupije koje ne particioniraju teritorij — ne ulaze u izvod županija.
-_SKIP_DIOCESE = {"Križevačka Eparhija"}
+_SKIP_DIOCESE = {"Križevačka eparhija"}  # = dioceses.display_name (odluka 310)
 
 
 class Settlement(NamedTuple):
