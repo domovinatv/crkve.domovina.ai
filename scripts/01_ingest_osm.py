@@ -30,7 +30,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from src import geo_hr, kinds, titular  # noqa: E402
+from src import geo_hr, kinds, osm_fixes, titular  # noqa: E402
 from src.denomination import normalize_denomination  # noqa: E402
 from src.db import add_alias, connect, merge_source  # noqa: E402
 from src.normalize import slugify  # noqa: E402
@@ -61,8 +61,9 @@ def run() -> None:
     kind_counts = Counter()
     with connect() as conn:
         for el in elements:
-            t = el.get("tags") or {}
             osm_type, osm_id = el["type"], el["id"]
+            # Poznato krivi tagovi, s izvorom (src/osm_fixes.py).
+            t = osm_fixes.apply(osm_type, osm_id, el.get("tags") or {})
 
             name = t.get("name") or t.get("official_name") or t.get("alt_name")
             coords = latlng(el)

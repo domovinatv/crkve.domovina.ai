@@ -185,3 +185,17 @@ novom koja se poziva na staru. Blokovi: S0 1–99, S1 100–199, S2 200–299 �
    285 naprema `parish_count` 206), a `/biskupije` u bloku „Ostale zajednice” ispisuje
    `parish_count` s oznakom „pravne osobe”, što je za Križevačku eparhiju (35) zapravo broj župa.
    To je oznaka u frontendu, ne broj: prijavljeno, nije mijenjano (`frontend/` izvan opsega S3).
+308. **Krivi OSM tag ispravlja se u ingestu, popisom s izvorom** (`src/osm_fixes.TAG_FIXES`,
+   primjenjuje `scripts/01`). Prvi unos: čvor 13304771994 (kapela sv. Terezije u Trnju) nosio je
+   `wikidata=Q132087369` i `wikipedia` župne crkve Svih Svetih (way 459564717; Wikidata provjerena
+   2026-11-20). Čvor ne dobiva samo prazninu nego svoj entitet, **Q132079947** („Pastoralni centar
+   bl. Alojzija Stepinca s kapelom sv. Terezije…”, iz keša `scripts/05`, 27 m od čvora), a
+   `wikipedia` se briše pa ga `05` popuni iz Q132079947. Slika „Pastoralni centar s kapelom
+   sv. Terezije … 01.jpg” na crkvi Svih Svetih (4058) curila je iz istog taga: Q132079947 nije
+   imao čvor sa svojim Q, pa je u `05` prostorno (`_nearest`, 150 m) pao na najbližu građevinu bez
+   proturječnog titulara — crkvu Svih Svetih (54 m; kapelu je titular isključio). U kešu su
+   unutar 500 m od crkve samo ta dva entiteta, pa nakon ispravka crkva dobiva P18
+   „Župna crkva Svih Svetih u Zagrebu cijela.jpg”, a kapela sliku pastoralnog centra. Očekivano
+   nakon rebuilda: `wikidata_dijeljen` **3** (samo parovi crkva + samostan). Slug se ne mijenja
+   (sufiks je OSM id). Otvoreno: `_nearest` smije dati entitet građevini koja već nosi DRUGI
+   Wikidata Q — opće pravilo nije uvedeno jer ga bez rebuilda nije moguće izmjeriti.
