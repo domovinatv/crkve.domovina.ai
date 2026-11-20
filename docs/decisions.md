@@ -251,3 +251,17 @@ novom koja se poziva na staru. Blokovi: S0 1–99, S1 100–199, S2 200–299 �
 313. **„Mihajla” = „Mihaila” → „Mihailo”** (Z-6096 Vrhovine, registar „Arhangela Mihajla i
    Gavrila”, OSM „Arhangela Mihaila i Gavrila”). Nad `after-s3.db` registar opet nalazi svoju
    crkvu (score 100). `head_key`: 4 crkve + 2 pravne osobe `sv mihajla` → `sv mihailo`.
+314. **Wikidata entitet se ne spaja na građevinu koja već nosi DRUGI Q** (`scripts/05`,
+   `_nearest(drugi_q=True)`). Q133733258 „BDM Bezgrešne na Knežiji” (2006) stopio se u
+   w246443250 „BDM Pomoćnice” (1929, Q125578862), 20 m dalje, i nestao iz kataloga. Simulacija
+   prostornog spajanja (OSM građevine iz `after-s3b.db`, Q iz keša Overpassa s `osm_fixes`,
+   keš Wikidate; `scratchpad/sim05.py`): spojeno 277 → 261. Od 16 promjena 14 postaju zasebne
+   građevine — među njima i do sada krivi spojevi (sinagoge Rijeka i Bjelovar na crkve, Kosi
+   toranj Rijeka, Nadbiskupska palača i ostaci sv. Mihovila u Splitu, kapucinski samostan na
+   konkatedralu sv. Ćirila i Metoda), ali i parovi kompleks/crkva s dva Q (Trogir sv. Ivan
+   Krstitelj, Čakovec sv. Nikola, Split sv. Frane, Čiovo sv. Križ, Sveta Nedelja sv. Rok) —
+   mogući duplikati za S4. 2 se preusmjeravaju na drugu građevinu bez Q (Split Lovre i Gospa od
+   Zvonika → Mesdžid, i dalje krivo; Marija Bistrica Q107013115 → „Kapela”), otvoreno.
+   Čabar Q138496303 i ostala 3 S3 spoja ostaju (oni idu po tagu ili na građevinu bez Q).
+   Pravilo (b) „generički titular nije slaganje” izmjereno i odbačeno: −22 spoja, gubi točne
+   Čabar i Križevci („Majke Božje Koruške”). Revizija: S4 (dedup).
