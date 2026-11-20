@@ -223,3 +223,14 @@ novom koja se poziva na staru. Blokovi: S0 1–99, S1 100–199, S2 200–299 �
    `zupe-index.json`/`zupa/<slug>.json`, koju `listici.domovina.ai` preuzima kao prikaz (ključ mu
    je slug župe, odluka iz CLAUDE.md). Nekatoličke zajednice (`scripts/03`) se ne diraju.
    Revizija: ako se ikad odluči i za čisti slug Dubrovačke, to je preusmjeravanje URL-a, ne ovo.
+311. **Kad dvije pravne osobe traže istu građevinu, prednost ima ona sa sjedištem u naselju
+   građevine** (`scripts/11`, redoslijed 1. prolaza, iza `weak_claim`). Blok po mjestu spaja
+   naselje, grad i općinu građevine, pa „zagreb” (Grad Zagreb) pokriva i Sesvete. Nakon S3 su
+   „ŽUPA ISUSOVA USKRSNUĆA” (Sesvete, Dugoselska 4 = adresa crkve `w416430719`, OIB) i „ŽUPA
+   USKRSNUĆA ISUSOVA” (Zagreb, Hrastin prilaz bb, bez OIB-a; Places ju je homonimom stavio na
+   istu crkvu) dobile isti titular, a crkvu je uzeo zapis s manjim id-om. Mjereno pokretanjem
+   `scripts/11` nad kopijom `after-s3.db` (staro naspram novog): 5 promjena, broj župnih crkava
+   isti (1156), sve prema župi iz istog naselja — Sesvete → 0550, Račišće (umjesto dominikanskog
+   samostana u Korčuli), Vrpolje (umjesto Trilja), Rožat (umjesto Dubrovnika), Boraja (umjesto
+   dominikanki u Šibeniku). Nijedan slug nije posebno tretiran. Revizija: S5 (Places izlazi iz
+   koordinata, homonim 701585 tada nestaje sam).

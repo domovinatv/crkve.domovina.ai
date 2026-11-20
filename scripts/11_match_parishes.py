@@ -121,8 +121,22 @@ def run(dry_run: bool = False) -> None:
         # Građevinu koju traže dvije pravne osobe dobiva prva na redu. Slabi
         # zahtjevi (`match.weak_claim`: osoba imenuje sveca, građevina nema
         # titular) idu zadnji — sortiranje je stabilno, ostalo ostaje po id-u.
-        order = sorted(parishes, key=lambda p: bool(
-            hits[p["id"]] and weak_claim(p["name"], hits[p["id"]][0])))
+        # Unutar toga ide prvo pravna osoba čije SJEDIŠTE leži u naselju
+        # građevine; ona koja je građevinu našla tek preko općine/grada
+        # (blok „zagreb" pokriva i Sesvete) dolazi poslije (odluka 311).
+        # Sesvete: „ŽUPA USKRSNUĆA ISUSOVA" (Zagreb, Hrastin prilaz) i
+        # „ŽUPA ISUSOVA USKRSNUĆA" (Sesvete, Dugoselska 4 = adresa crkve)
+        # dobivaju istu crkvu; bez ovoga ju je uzeo zapis s manjim id-om.
+        naselje = {c["id"]: place_key(c["city"], c["settlement"]) for c in churches}
+
+        def _rang(p) -> tuple[bool, bool]:
+            hit = hits[p["id"]]
+            if not hit:
+                return (False, False)
+            return (weak_claim(p["name"], hit[0]),
+                    not (place_key(p["city"]) & naselje[hit[0].id]))
+
+        order = sorted(parishes, key=_rang)
 
         for p in order:
             places = place_key(p["city"])
