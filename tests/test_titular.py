@@ -176,3 +176,38 @@ def test_leopold_b_je_bogdan():
 def test_epitet_izvan_niza_ostaje_kako_je():
     # Bez niza ime ostaje u genitivu, pa se ni epitet ne diže (inače miješano).
     assert parse("crkva sv. Silvestra pape") == "sv. Silvestra pape"
+
+
+# --- S3 ispravci nakon rebuilda (odluke 312–313) -----------------------------
+
+@pytest.mark.parametrize("name", [
+    "crkva Blažene Djevice Marije - Kraljice mira",        # w403099918
+    "Crkva Blažene Djevice Marije i župni dvor",           # registar Z-2282
+    "Kapelica Blažene Djevice Marije",
+])
+def test_bdm_bez_otajstva_nije_svetac_djevica(name):
+    assert parse(name) == "Majka Božja"
+    assert head_key(name) == "majka bozja"
+
+
+def test_bdm_s_otajstvom_ostaje_otajstvo():
+    assert parse("crkva rođenja Blažene Djevice Marije") == "Rođenje BDM"
+    assert parse("Crkva Uznesenja bl. Djevice Marije") == "Uznesenje BDM"
+    # BDM kao drugi član niza ne preuzima titular
+    assert head_key("crkva svetog Antuna Padovanskog i Blažene Djevice Marije") == "sv antun"
+
+
+def test_granesina_i_kraljica_mira_nisu_isti_titular():
+    # Z-2282: registar „Blažene Djevice Marije" ne smije se jedinstvenošću
+    # spojiti na Kraljicu mira — generički titular ne nosi jedinstvenost.
+    from src.match import GENERIC_TITULARS
+    assert key("Crkva Blažene Djevice Marije i župni dvor") in GENERIC_TITULARS
+    assert head_key("crkva rođenja Blažene Djevice Marije") != "majka bozja"
+
+
+def test_mihajla_i_mihaila_imaju_istu_glavu():
+    # Z-6096 Vrhovine: registar „Mihajla", OSM „Mihaila"
+    reg = "Crkva sv. Arhangela Mihajla i Gavrila"
+    osm = "crkva svetih arhangela Mihaila i Gavrila"
+    assert parse(reg) == parse(osm) == "sv. Mihailo i Gavrilo"
+    assert head_key(reg) == head_key(osm) == "sv mihailo"

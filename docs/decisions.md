@@ -234,3 +234,20 @@ novom koja se poziva na staru. Blokovi: S0 1–99, S1 100–199, S2 200–299 �
    samostana u Korčuli), Vrpolje (umjesto Trilja), Rožat (umjesto Dubrovnika), Boraja (umjesto
    dominikanki u Šibeniku). Nijedan slug nije posebno tretiran. Revizija: S5 (Places izlazi iz
    koordinata, homonim 701585 tada nestaje sam).
+312. **„Blažene Djevice Marije” bez otajstva je generički titular „Majka Božja”, ne svetac
+   „Djevica”.** Postojeći bug (i prije S3): `_SAINT_MARK` je „Blažene” čitao kao „sv.”, pa je
+   „crkva Blažene Djevice Marije - Kraljice mira” imala titular „sv. Djevice Marije”. S3 je
+   registru Z-2282 („Crkva Blažene Djevice Marije i župni dvor”, Granešina) skinuo „i župni dvor”,
+   puni ključ se izjednačio s Kraljicom mira i pravilo jedinstvenosti ih je spojilo. Sad je to
+   „Majka Božja” (u `GENERIC_TITULARS`, ne nosi jedinstvenost), samo kad je „Blažene/bl.” prva
+   oznaka u nazivu; `_BDM` usput prepoznaje i „bl. Djevice Marije” (Uznesenje). `head_key` nad
+   `baseline-s2.db` naspram S3 koda: 78 crkava + 3 pravne osobe `sv djevic*` → `majka bozja`
+   (1 → `uznesenje bdm`), nijedan `sv djevic*` ne ostaje. Z-2282 nad `after-s3.db`
+   (`best_match`, blok Zagreb): nespojen, kao u S2 — naziv ne kaže koji je marijanski zaziv.
+   Odbačeno: isto pravilo za „ŽUPA B. D. MARIJE …” / „BDM …” (bez „Blažene”) — +4 spoja, ali −2
+   (Belec, Zagreb „Marije Anđeoske”), jer OSM piše „svete Marije Snježne” s glavom `sv marija`.
+   Simulacija 1. prolaza: Bjelovar „BLAŽENE DJEVICE MARIJE - GOSPE LURDSKE” gubi kapelu BDM u
+   Trojstvenom Markovcu (prije 100; točnost tog spoja nije provjerena).
+313. **„Mihajla” = „Mihaila” → „Mihailo”** (Z-6096 Vrhovine, registar „Arhangela Mihajla i
+   Gavrila”, OSM „Arhangela Mihaila i Gavrila”). Nad `after-s3.db` registar opet nalazi svoju
+   crkvu (score 100). `head_key`: 4 crkve + 2 pravne osobe `sv mihajla` → `sv mihailo`.

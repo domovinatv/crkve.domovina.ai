@@ -19,7 +19,8 @@ from .normalize import strip_diacritics, strip_type_prefix
 # Državna evidencija skraćuje agresivno ("ŽUPA UZNESENJA B.D. MARIJE"), OSM
 # piše puno, a Registar kulturnih dobara koristi pridjevski oblik ("Uznesenja
 # Marijina"). Bez ove alternacije 229 od 1563 župa ostane bez titulara.
-_BDM = r"(?:blažen\w*\s+djevic\w*\s+marij\w*|b\.?\s*d\.?\s*marij\w*|bdm|marijin\w*|gospin\w*)"
+_BDM = (r"(?:blažen\w*\s+djevic\w*\s+marij\w*|bl\.?\s*djevic\w*\s+marij\w*"
+        r"|b\.?\s*d\.?\s*marij\w*|bdm|marijin\w*|gospin\w*)")
 # Kratice "presv." / "bezgr." iz registra.
 _PRESV = r"(?:presv\.?|presvet\w*)"
 _BEZGR = r"(?:bezgr\.?|bezgrešn\w*|bezgresn\w*)"
@@ -104,6 +105,9 @@ _KNOWN_NOM = {
     "ladislava": "Ladislav", "kozme": "Kozma", "liberana": "Liberan",
     "teodora": "Teodor", "jude": "Juda", "mojsija": "Mojsije",
     "modesta": "Modest", "mihaila": "Mihailo", "gavrila": "Gavrilo",
+    # „Mihajla" (registar, Vrhovine Z-6096) = OSM „Mihaila": isti nominativ, da
+    # se glave slože (odluka 313).
+    "mihajla": "Mihailo", "mihajlo": "Mihailo",
     # Nisu genitivi nego oblici koji se u nazivima zatječu: „Mihovile" je
     # vokativ (OSM „Sv.Mihovile i Sv.Mario"). „Pavle" (srpski nominativ) i
     # „Ante" su nominativi na -e — upisani kao takvi da ih audit ne broji.
@@ -119,6 +123,7 @@ _GLUED_MARK = re.compile(r"\b(sv|bl)\.(?=\w)", re.IGNORECASE)
 # Oznaka sveca UNUTAR niza („Roka i sv. Liberana", „Vida i svetog Jurja") —
 # ne ide u titular, niz je „sv. Rok i Liberan".
 # „Blažene" ovdje nije oznaka: „i Blažene Djevice Marije" je BDM (vidi parse).
+_BDM_AT = re.compile(r"(blažen\w*|bl\.?)\s*djevic\w*\s+marij\w*", re.IGNORECASE)
 _INNER_MARK = re.compile(r"^(sv\.?|svet\w*)$", re.IGNORECASE)
 _BDM_START = re.compile(_BDM, re.IGNORECASE)
 _QUOTES = "\"'„“”«»"
@@ -184,6 +189,14 @@ def parse(name: str | None, place: str | None = None) -> str | None:
     m = _SAINT_MARK.search(core)
     if not m:
         return None
+    # „Blažene Djevice Marije" nije svetac „Djevica": `_SAINT_MARK` bi uzeo
+    # „Blažene" kao „sv." i titular bi bio „sv. Djevice Marije" (S3 rebuild:
+    # Z-2282 Granešina spojen na Kraljicu mira). BDM bez otajstva je generički
+    # marijanski titular (`match.GENERIC_TITULARS`): naziv ne kaže koji zaziv.
+    # Samo kad je BAŠ ta oznaka prva — „sv. Antuna i Blažene Djevice Marije"
+    # ostaje sv. Antun (odluka 312).
+    if _BDM_AT.match(core, m.start()):
+        return "Majka Božja"
     rest = core[m.end():].strip(" .,-")
     # Ponovljena oznaka: „SV. SV. ĆIRILA I METODA" (bugarska crkvena općina).
     while (m2 := _SAINT_MARK.match(rest)) and m2.end() and rest[m2.end():].strip(" .,-"):
