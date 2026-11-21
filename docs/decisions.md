@@ -317,3 +317,23 @@ novom koja se poziva na staru. Blokovi: S0 1–99, S1 100–199, S2 200–299 �
    imena, koju stara definicija nije vidjela): `value` = spojiv par iste uloge koji nije spojen
    i nije u `OSTAVLJENI`; različita uloga, različit `wikidata` i `OSTAVLJENI` idu u
    `namjerno_ostavljeni` (45), broj spojenih u `spojeno`. Poslije: 0; po staroj definiciji 7.
+405. **Marijanski zaziv proturječi, ali ne ulazi u ključ titulara** (`titular.zaziv`,
+   `zazivi_u_sukobu`; `scripts/05._nearest` i `match._score`). Generički „Majka Božja”
+   (odluka 312) je spajao Q133733258 „BDM Bezgrešne na Knežiji” (2006) u w246443250 „BDM
+   Pomoćnice” (1929). Zaziv je skup osnova riječi („od Snijega” = „Snježna”, leksikon
+   sinonima); sukob je samo kad oba naziva imaju zaziv bez zajedničke riječi, pa je gola BDM
+   spojiva sa svime (pravilo (b) iz 314 ostaje odbačeno). Ključ sa zazivom odbijen mjerenjem:
+   Z-834 bi i dalje bio izjednačen (svetište i gola „Kapela BDM” oba 100, bonus odrezan na
+   100), a mijenjao bi `churches.titular` i opseg pravila jedinstvenosti. Rebuild prema
+   95a2bc9: +1 građevina (Knežija), veze +1/−1 (Pula Gospe od Mora točno, Places potvrdio;
+   Stobreč Gospe od Mira ← Župa Gospe od Milosrđa bio kriv, `geo_conflicts` 2,7 km), baština
+   +2 točna (Z-834, Z-4568), a 5 krivih starih spojeva postaje nespojeno (Z-1412, Z-4858,
+   Z-5435, Z-2392, Z-321; Z-1412 ustupa crkvu Z-4568). Sinonim `milosrd → milost` čuva
+   RST-1286 Suđurađ (jedina marijanska crkva u naselju). Audit: samo `crkve_ukupno` +1.
+   `docs/research/2026-11-20-s4-titular.md`.
+406. **Isti zaziv pobjeđuje samo golu BDM, ne nemarijanske kandidate** (`ZAZIV_BONUS = 8`,
+   samo za marginu). Kad u bloku postoji kandidat istog zaziva, kandidat s ključem „majka
+   bozja” bez zaziva se spušta za 8; prag i vraćeni score ostaju. Z-834 → Svetište Majke Božje
+   Svetogorske (Mali Lug). Inačica s bonusom prema svima izmjerena i odbačena: kapucinski
+   samostan u Rijeci oteo je crkvu Gospe Lurdske župi, a bazilika Marija Bistrica postala
+   „župna crkva” Karmela (oba para izjednačena sa samostanskom zgradom bez titulara).
