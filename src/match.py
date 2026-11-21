@@ -36,7 +36,7 @@ from rapidfuzz import fuzz
 from .denomination import is_katolicka, is_nekatolicka
 from .kinds import classify
 from .normalize import norm_key, strip_diacritics
-from .titular import head_key, key as titular_key
+from .titular import head_key, key as titular_key, zaziv, zazivi_u_sukobu
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +52,14 @@ MARGIN = 6
 # u istom mjestu. Za sličnost naziva je i takav titular koristan (bonus na
 # score), ali _unique_by_titular_and_kind ga mora odbiti.
 GENERIC_TITULARS = {"majka bozja"}
+# Isti marijanski zaziv (titular.zaziv) je jači dokaz od gole „BDM" istog
+# ključa (odluka 405): Z-834 „Majke Božje Svetogorske" daje 100 i svetištu
+# Svetogorske i goloj „Kapeli BDM" u Čabru. Kad u bloku postoji kandidat istog
+# zaziva, goli marijanski kandidat se za marginu spušta za toliko. Samo
+# RANGIRA: ne mijenja prag, vraćeni score ni odnos prema kandidatima koji
+# nisu marijanski (Rijeka: kapucinski samostan i crkva Gospe Lurdske ostaju
+# izjednačeni, kao i prije).
+ZAZIV_BONUS = 8
 
 
 def place_key(*parts: str | None) -> set[str]:
@@ -84,6 +92,7 @@ class Candidate:
     kind: str | None = None
     religion: str | None = None
     denomination: str | None = None
+    zaziv: frozenset[str] | None = None
 
     @classmethod
     def from_row(cls, row) -> "Candidate":
@@ -96,6 +105,7 @@ class Candidate:
             nkey=norm_key(name),
             tkey=titular_key(name),
             hkey=head_key(name),
+            zaziv=zaziv(name),
             # `kind` iz baze ako postoji (OSM tagovi su pouzdaniji), inače iz naziva.
             kind=(row["kind"] if "kind" in cols and row["kind"] else classify({}, name)),
             religion=row["religion"] if "religion" in cols else None,
@@ -208,12 +218,17 @@ def _score(
     want_nkey = norm_key(name)
     want_tkey = titular_key(name)
     want_hkey = head_key(name)
+    want_z = zaziv(name)
 
-    scored: list[tuple[int, Candidate]] = []
+    scored: list[tuple[int, int, Candidate]] = []
     for c in pool.values():
         # Tvrdi filtar: različit svetac = različit objekt, ma koliko nazivi
         # bili slični. Uspoređuje se glava titulara, ne puni (vidi titular.py).
         if want_hkey and c.hkey and want_hkey != c.hkey:
+            continue
+        # Isti generički titular, ali dva različita marijanska zaziva („BDM
+        # Pomoćnice" / „BDM Bezgrešne") = različit objekt (odluka 405).
+        if zazivi_u_sukobu(want_z, c.zaziv):
             continue
         score = fuzz.token_set_ratio(want_nkey, c.nkey)
         # Poklapanje punog titulara je jak signal — podigni score, ali ne preko
@@ -221,13 +236,19 @@ def _score(
         if want_tkey and c.tkey and want_tkey == c.tkey:
             score = min(100, score + 8)
         if score >= threshold:
-            scored.append((score, c))
+            scored.append((score, score, c))
+
+    if want_z and any(c.zaziv for _, _, c in scored):
+        # Ovdje su svi zazivi u `scored` spojivi s traženim (sukobljeni su
+        # gore izbačeni), pa „ima zaziv" znači „ima isti zaziv".
+        scored = [(r - ZAZIV_BONUS if c.tkey in GENERIC_TITULARS and not c.zaziv else r, s, c)
+                  for r, s, c in scored]
 
     if scored:
-        scored.sort(key=lambda x: (-x[0], x[1].id))
+        scored.sort(key=lambda x: (-x[0], x[2].id))
         if len(scored) > 1 and scored[0][0] - scored[1][0] < margin:
             return None
-        return scored[0][1], scored[0][0]
+        return scored[0][2], scored[0][1]
 
     return _unique_by_titular_and_kind(pool, want_tkey, name)
 

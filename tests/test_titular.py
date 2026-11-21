@@ -211,3 +211,64 @@ def test_mihajla_i_mihaila_imaju_istu_glavu():
     osm = "crkva svetih arhangela Mihaila i Gavrila"
     assert parse(reg) == parse(osm) == "sv. Mihailo i Gavrilo"
     assert head_key(reg) == head_key(osm) == "sv mihailo"
+
+
+# --- marijanski zaziv (S4, odluka 405) --------------------------------------
+from src.titular import zaziv, zaziv_sukob  # noqa: E402
+
+
+@pytest.mark.parametrize("name,expected", [
+    ("crkva Blažene Djevice Marije Pomoćnice", {"pomocnic"}),          # Knežija w246443250
+    ("Kapela Blažene Djevice Marije Bezgrešne na Knežiji", {"bezgres"}),  # Q133733258
+    ("Svetište Majke Božje Svetogorske", {"svetogor"}),               # Mali Lug
+    ("Kompleks crkve Blažene Djevice Marije “Majke Božje Svetogorske” s pripadajućim "
+     "građevinama, ruševnim građevinama, sajmištem, te pašnjakom i šumom", {"svetogor"}),  # Z-834
+    ("Crkva Gospe od Snijega", {"snjez"}),
+    ("Crkva Majka Božja Snježna", {"snjez"}),
+    ("Crkva Majke Božje Sniježne (sv. Helene)", {"snjez"}),
+    ("Crkva Majke Božje od sv. Krunice (sv. Rozalije)", {"ruzarij"}),  # Z-321
+    ("ŽUPA GOSPE OD RUŽARIJA BORAJA", {"ruzarij", "boraj"}),
+    ("crkva Majke Božje Sljemenske Kraljice Hrvata", {"sljemen", "kraljic", "hrvat"}),
+    ("Samostan Gospe od Delorita", {"loret"}),
+])
+def test_zaziv(name, expected):
+    assert zaziv(name) == frozenset(expected)
+
+
+@pytest.mark.parametrize("name", [
+    "Kapela Blažene Djevice Marije",                  # gola BDM (Čabar, Z-2599)
+    "Crkva Blažene Djevice Marije i župni dvor",      # Z-2282 Granešina: „i" nije zaziv
+    "Crkva BDM (Gospe od Planice)",                   # Z-5695 Komiža: zaziv je u zagradi
+    "ŽUPA BLAŽENE DJEVICE MARIJE",
+    "Crkva sv. Marka",                                 # nije generički marijanski
+    "Crkva Uznesenja Blažene Djevice Marije",          # otajstvo, ne „Majka Božja"
+])
+def test_bez_zaziva(name):
+    assert zaziv(name) is None
+
+
+def test_zaziv_ne_mijenja_kljuc():
+    # Puni ključ i glava ostaju generički: zaziv samo proturječi, ne razlikuje.
+    assert key("Svetište Majke Božje Svetogorske") == "majka bozja"
+    assert head_key("crkva Blažene Djevice Marije Pomoćnice") == "majka bozja"
+
+
+@pytest.mark.parametrize("a,b,sukob", [
+    ("Kapela Blažene Djevice Marije Bezgrešne na Knežiji",
+     "crkva Blažene Djevice Marije Pomoćnice", True),                  # Knežija
+    ("Svetište Majke Božje Svetogorske", "Crkva Gospe Lurdske", True),
+    ("Crkva Gospe od Lužina", "Gospa od Ružarija", True),                # Z-4858 Ston
+    # Gola BDM je spojiva sa svakim zazivom (pravilo (b) odbačeno, −22 spoja).
+    ("Kapela Blažene Djevice Marije", "Svetište Majke Božje Svetogorske", False),
+    ("Crkva BDM (Gospe od Planice)", "crkva Gospe od Planice", False),   # Z-5695 Komiža
+    ("Crkva Majke Božje (Marija Bistrica)", "bazilika Majke Božje Bistričke", False),
+    # Ista pobožnost, drugi zapis.
+    ("Crkva Majke Božje Sljemenske", "ŽUPA MAJKE BOŽJE SLJEMENSKE KRALJICE HRVATA", False),
+    ("Gospa od Sniga", "Crkva Gospe Snježne", False),
+    ("Crkva Gospe od Milosrđa", "crkva Gospe od Milosti", False),       # RST-1286 Suđurađ
+    ("Crkva Gospe od Sedam žalosti", "Kapela Gospe Žalosne", False),
+    ("ŽUPA GOSPE OD RUŽARIJA BORAJA", "Gospa od Ružarija", False),       # mjesto u nazivu
+])
+def test_zaziv_sukob(a, b, sukob):
+    assert zaziv_sukob(a, b) is sukob
+    assert zaziv_sukob(b, a) is sukob

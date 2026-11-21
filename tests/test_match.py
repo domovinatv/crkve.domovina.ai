@@ -161,3 +161,50 @@ def test_weak_claim_ne_dira_poklapanje_titulara(index):
     assert not weak_claim("ŽUPA SV. JURJA", cand)
     # Ni pravna osoba bez sveca nije slab zahtjev.
     assert not weak_claim("FRANJEVAČKI SAMOSTAN RIJEKA - TRSAT", cand)
+
+
+# --- marijanski zaziv (S4, odluka 405) --------------------------------------
+# Blok općine Čabar iz baze (Z-834 „Majke Božje Svetogorske", naselje Gerovo).
+_CABAR = [
+    (11, "Crkva Majka Božja Snježna", "Gerovo"),
+    (12, "crkva svetih Hermagora i Fortunata", "Gerovo"),
+    (13, "Kapela Blažene Djevice Marije", "Čabar"),
+    (14, "crkva Majke Božje od Sedam Žalosti", "Kozji Vrh"),
+    (15, "Svetište Majke Božje Svetogorske", "Mali Lug"),
+    (16, "Kapela Majka Božja Pomoćnica", "Plešce"),
+]
+_Z834 = ("Kompleks crkve Blažene Djevice Marije “Majke Božje Svetogorske” s pripadajućim "
+         "građevinama, ruševnim građevinama, sajmištem, te pašnjakom i šumom")
+
+
+def _cabar_index():
+    return build_index([row(i, n, settlement=s, municipality="Čabar") for i, n, s in _CABAR])
+
+
+def test_isti_zaziv_pobjeduje_golu_bdm():
+    # Svetište i gola „Kapela BDM" oba daju token_set 100; isti zaziv odlučuje.
+    hit = best_match(_cabar_index(), _Z834, place_key("Gerovo"), place_key("ČABAR"))
+    assert hit and hit[0].id == 15 and hit[1] == 100
+
+
+def test_gola_bdm_ostaje_spojiva_sa_zazivom():
+    idx = build_index([row(1, "crkva Gospe od Planice", settlement="Komiža")])
+    hit = best_match(idx, "Crkva BDM (Gospe od Planice)", place_key("Komiža"))
+    assert hit and hit[0].id == 1                     # Z-5695
+
+
+def test_razliciti_zazivi_ne_spajaju_se():
+    # Z-4858 „Gospe od Lužina" (Ston) bila je na „Gospa od Ružarija".
+    idx = build_index([row(1, "Gospa od Ružarija", settlement="Tomislavovac",
+                           municipality="Ston")])
+    assert best_match(idx, "Crkva Gospe od Lužina", place_key("Ston"), place_key("STON")) is None
+
+
+def test_zaziv_ne_razbija_izjednacenje_s_nemarijanskim():
+    # Rijeka: kapucinski samostan (zgrada bez titulara) i crkva Gospe Lurdske
+    # oba daju 100 „KAPUCINSKOM SAMOSTANU GOSPE LURDSKE"; ostaje nespojeno kao
+    # i prije, inače samostan otme župnu crkvu ŽUPI GOSPE LURDSKE.
+    idx = build_index([row(1, "crkva Gospe Lurdske", city="Rijeka"),
+                       row(2, "Kapucinski samostan", city="Rijeka")])
+    assert best_match(idx, "KAPUCINSKI SAMOSTAN GOSPE LURDSKE RIJEKA", place_key("Rijeka")) is None
+    assert best_match(idx, "ŽUPA GOSPE LURDSKE", place_key("Rijeka"))[0].id == 1

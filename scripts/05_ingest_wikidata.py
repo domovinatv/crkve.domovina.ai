@@ -74,12 +74,13 @@ def run() -> None:
         }
         # Prostorni indeks: koordinate svih građevina, grubo blokirane po
         # 0.01° ćeliji (~1.1 km) da izbjegnemo O(n·m) usporedbu.
-        grid: dict[tuple[int, int], list[tuple[int, float, float, str | None]]] = {}
+        grid: dict[tuple[int, int], list[tuple]] = {}
         for r in conn.execute(
-            "SELECT id, lat, lng, titular FROM churches WHERE lat IS NOT NULL"
+            "SELECT id, lat, lng, titular, name FROM churches WHERE lat IS NOT NULL"
         ).fetchall():
             cell = (int(r["lat"] * 100), int(r["lng"] * 100))
-            grid.setdefault(cell, []).append((r["id"], r["lat"], r["lng"], r["titular"]))
+            grid.setdefault(cell, []).append(
+                (r["id"], r["lat"], r["lng"], r["titular"], titular.zaziv(r["name"])))
 
         for q, r in by_item.items():
             coord = wikidata.parse_point(r.get("coord"))
@@ -104,7 +105,7 @@ def run() -> None:
             if church_id:
                 stats["spojeno_po_wikidata_tagu"] += 1
             else:
-                church_id = _nearest(grid, lat, lng, titular.key(name))
+                church_id = _nearest(grid, lat, lng, titular.key(name), titular.zaziv(name))
                 if church_id:
                     stats["spojeno_prostorno"] += 1
 
@@ -162,13 +163,19 @@ def run() -> None:
     log.info("građevina sa slikom: %d | s Wikipedijom: %d", n_img, n_wiki)
 
 
-def _nearest(grid, lat: float, lng: float, tkey: str | None) -> int | None:
-    """Najbliža građevina unutar RADIUS_M, uz uvjet da titular ne proturječi."""
+def _nearest(grid, lat: float, lng: float, tkey: str | None,
+             zaz: frozenset[str] | None = None) -> int | None:
+    """Najbliža građevina unutar RADIUS_M, uz uvjet da titular ne proturječi.
+
+    Generički „Majka Božja" proturječi i kad se marijanski zazivi razlikuju
+    (odluka 405): Q133733258 „BDM Bezgrešne na Knežiji" (2006) nije
+    w246443250 „BDM Pomoćnice" (1929), 20 m dalje.
+    """
     best: tuple[float, int] | None = None
     c_lat, c_lng = int(lat * 100), int(lng * 100)
     for dlat in (-1, 0, 1):
         for dlng in (-1, 0, 1):
-            for cid, clat, clng, ctit in grid.get((c_lat + dlat, c_lng + dlng), []):
+            for cid, clat, clng, ctit, czaz in grid.get((c_lat + dlat, c_lng + dlng), []):
                 d = haversine_m(lat, lng, clat, clng)
                 if d > RADIUS_M:
                     continue
@@ -177,6 +184,8 @@ def _nearest(grid, lat: float, lng: float, tkey: str | None) -> int | None:
 
                     if tk(ctit) and tk(ctit) != tkey:
                         continue
+                if titular.zazivi_u_sukobu(zaz, czaz):
+                    continue
                 if best is None or d < best[0]:
                     best = (d, cid)
     return best[1] if best else None

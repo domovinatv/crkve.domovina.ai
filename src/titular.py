@@ -372,3 +372,91 @@ def head_key(name: str | None) -> str | None:
 
 def _key_of(t: str) -> str:
     return re.sub(r"[^a-z0-9 ]+", "", strip_diacritics(t).lower()).strip()
+
+
+# --- Marijanski zaziv (S4, odluka 405) --------------------------------------
+# Generički titular „Majka Božja" (odluka 312, `match.GENERIC_TITULARS`) guta
+# zaziv: „BDM Pomoćnice" (Knežija, 1929) i „BDM Bezgrešne" (Knežija, 2006) imaju
+# isti puni ključ, pa ih `scripts/05` spoji u jednu građevinu, a `scripts/10`
+# ne razlikuje „Majke Božje Svetogorske" od gole „Kapele BDM" (Z-834).
+# Zaziv NE ulazi u `key()`/`head_key()` ni u prikaz: on samo kaže kad su dva
+# marijanska naziva SIGURNO različita (oba imaju zaziv i zazivi se razlikuju).
+# Gola „BDM"/„Majka Božja" bez zaziva ostaje spojiva sa svakim zazivom —
+# pravilo (b) „generički titular nije slaganje" je odbačeno (−22 spoja).
+_ZAZIV_MARK = re.compile(rf"(?:majk\w*\s+božj\w*|gosp[aeio]\w*|{_BDM}|marij\w*)(?=\s|$)",
+                         re.IGNORECASE)
+# „Gospe od Zdravlja", „Gospe kraj mora", „Gospa pod lipom": zaziv je iduća riječ.
+_ZAZIV_PREP = {"od", "kod", "pod", "kraj", "van"}
+# Riječ bez prijedloga je zaziv samo ako je pridjev („Lurdske", „Snježna",
+# „Bistričke") ili marijanski naslov („Pomoćnice", „Kraljice"). Bez toga bi
+# mjesto iza naziva (evidencija, „… GOSPE OD RUŽARIJA BORAJA") ili „i župni
+# dvor" (Z-2282) postali zaziv.
+_ZAZIV_WORD = re.compile(r"\w{3,}(?:sk|ck|n)[ae]$|\w{3,}ic[ae]$|\w{3,}at[ae]$")
+# Zaziv je gotov na vezniku ili prijedlogu („Fatimske i svete Magdalene",
+# „Svetogorske s pripadajućim građevinama"); „svete/presvete/svih" ne nose
+# razliku („od Presvete Krunice" = „od Krunice").
+_ZAZIV_STOP = {"i", "ili", "s", "sa", "/", "-", "–", "u", "na", "kod", "iz"}
+_ZAZIV_FILL = {"svete", "presvete", "sv.", "svih", "čudotvorne"}
+# Ista pobožnost, različit zapis — izmjereno u nazivima iz svih izvora.
+_ZAZIV_SYN = {
+    "snjeg": "snjez", "snig": "snjez",                      # „od Snijega/Sniga" = Snježna
+    "rozarij": "ruzarij", "ruzar": "ruzarij", "krunic": "ruzarij", "ruzaric": "ruzarij",
+    "karme": "karmel", "karmin": "karmel",
+    "lauretan": "loret", "delorit": "loret",              # „Delorita" = de Loreto (Kuna)
+    "sedam": "zalos", "zalost": "zalos",                    # „od Sedam Žalosti" = Žalosna
+    # „od Milosti" i „od Milosrđa" se miješaju: RST-1286 „Gospe od Milosrđa"
+    # (Suđurađ) je OSM „crkva Gospe od Milosti", jedina marijanska u naselju.
+    "milosrd": "milost",
+}
+
+
+def _zaziv_stem(word: str) -> str:
+    s = strip_diacritics(word).lower().strip(".,;:")
+    s = s.replace("ije", "je")                     # sniježna = snježna
+    s = re.sub(r"[aeiou]+$", "", s)
+    s = re.sub(r"(sk|ck|n)$", "", s)               # lurdsk → lurd, loretsk → loret
+    return _ZAZIV_SYN.get(s, s)
+
+
+def zaziv(name: str | None) -> frozenset[str] | None:
+    """Ključ marijanskog zaziva za naziv s generičkim titularom „Majka Božja".
+
+    Skup osnova riječi zaziva (do 3, do prvog veznika): „crkva BDM Pomoćnice"
+    → {"pomocnic"}, „Majke Božje Sljemenske Kraljice Hrvata" → {"sljemen",
+    "kraljic", "hrvat"}, „Gospa od Snijega" i „Majka Božja Snježna" → {"snjez"}.
+    Gola „Kapela Blažene Djevice Marije" i svaki drugi titular → None.
+    """
+    if not name or parse(name) != "Majka Božja":
+        return None
+    core = strip_type_prefix(name.strip())
+    core = core.translate({ord(q): " " for q in _QUOTES})
+    core = _STOP_AFTER.split(core, maxsplit=1)[0].strip()
+    marks = list(_ZAZIV_MARK.finditer(core))
+    if not marks:
+        return None
+    words = core[marks[-1].end():].split()
+    if not words:
+        return None
+    if words[0].lower() in _ZAZIV_PREP:
+        words = words[1:]
+    elif not _ZAZIV_WORD.search(strip_diacritics(words[0]).lower().strip(".,;:")):
+        return None
+    out: set[str] = set()
+    for w in words:
+        if w.lower() in _ZAZIV_STOP or len(out) == 3:
+            break
+        if w.lower() in _ZAZIV_FILL:
+            continue
+        out.add(_zaziv_stem(w))
+    return frozenset(out) or None
+
+
+def zaziv_sukob(a: str | None, b: str | None) -> bool:
+    """Proturječe li zazivi dvaju naziva? Samo kad OBA imaju zaziv i nemaju
+    nijednu zajedničku riječ („Kraljice Hrvata" i „Sljemenske Kraljice Hrvata"
+    nisu sukob; „Pomoćnice" i „Bezgrešne" jesu)."""
+    return zazivi_u_sukobu(zaziv(a), zaziv(b))
+
+
+def zazivi_u_sukobu(za: frozenset[str] | None, zb: frozenset[str] | None) -> bool:
+    return bool(za and zb and not (za & zb))
