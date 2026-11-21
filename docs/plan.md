@@ -67,4 +67,9 @@ pravne osobe, BDM → Majka Božja, spor oko građevine dobiva pravna osoba iz i
 eparhija/manastiri, `osm_fixes`, hrvatski nazivi; `titular_genitiv` 302→0, `parish_count_razlika`
 2→0, `wikidata_dijeljen` 4→3. Odluke 300–313, 314 povučena (Wikidata duplikati → S4). Mjerenje:
 `docs/research/2026-11-20-s3-titulari.md`, `docs/research/2026-11-20-s3-rebuild.md`.
-Sljedeća je S4.
+S4 (2026-11-20/21, a51eee0): dedup OSM node+way u `src/dedup.py` (kraj `01`, prije `05`),
+uloga + spojiv naziv + ≤20 m, identitet točke u `church_merged`, stari slug → 301; marijanski
+zaziv proturječi u `05`/`10` (Knežija, Z-834). `node_way_duplikati` 40→0 (73 spojena, 45
+ostavljeno), crkava 6961→6890. Odluke 400–406. Mjerenje: `docs/research/2026-11-20-s4-dedup.md`,
+`docs/research/2026-11-20-s4-titular.md`.
+Sljedeća je S5.

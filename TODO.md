@@ -30,11 +30,11 @@ Legenda: `[x]` gotovo · `[ ]` otvoreno · `[~]` u radu · `(!)` traži korisnik
 - [x] Titular „B.” (ŽUPA SV. NIKOLE B., Rijeka) i obrnuti red „Isusova uskrsnuća” u `head_key`; Rijeka sv. Nikola nema nijednu građevinu → S3
 - [x] `scripts/03`: 20 „MANASTIR” zapisa klasificirano kao `eparhija` → S3
 - [ ] Pravoslavne pravne osobe: spajanje po naselju (172 jednoznačna para, uzorak 20: 17 točno, 0 krivo, 3 nejasno) + 14 građevina nepoznate konfesije koje prolaz 2 veže na SPC općine; zasebna stavka poslije S3 (odluka 206) → otvoreno
-- [ ] Regresije S3: Knežija Q133733258 stopljena u BDM Pomoćnice (pravilo „Wikidata ne ide na drugi Q”, odluka 314 povučena); Z-834 Mali Lug (marijanski zaziv izgubljen iz ključa) → S4
-- [ ] Otvoreno iz S3: Z-2014 Šibenik→Žaborić, Z-2282 Granešina, Bjelovar Gospe Lurdske bez crkve, krivi Wikidata spojevi (Mesdžid Split Q12627803, Marija Bistrica) → S4
+- [x] Regresije S3: Knežija Q133733258 stopljena u BDM Pomoćnice; Z-834 Mali Lug → S4 (odluke 405–406: marijanski zaziv proturječi, ne ulazi u ključ)
+- [ ] Otvoreno iz S3 (pregledano u S4, presude u `docs/research/2026-11-20-s4-titular.md`, koda nema): Z-2014 Šibenik→Žaborić (vjerojatno krivo), Z-2282 Granešina (treba ručni override), Bjelovar Gospe Lurdske (3 kandidata 100), Mesdžid Split Q12627803 (Wikidata prostorni spoj ne gleda tip); plus „Gospe od Karmela”≠„Gospe Karmelske”, „Bezgrješnog” → poslije S5
 - [ ] Frontend `/biskupije` „Ostale zajednice” zove `parish_count` „pravne osobe”; karta-web `useBiskupijeLayer.ts:201` eparhiju zove „Biskupija” → S5/S6
-- [ ] Node+way duplikati iste zgrade spojeni u jedan zapis (tlocrt pobjeđuje, ID-jevi oba sačuvani); `audit.node_way_duplikati = 0` uz popis namjerno ostavljenih → S4
-- [ ] Slug spojenog duplikata: stari URL ne smije dati 404 (redirect ili alias) → S4
+- [x] Node+way duplikati iste zgrade spojeni u jedan zapis (tlocrt pobjeđuje, ID-jevi oba sačuvani); `audit.node_way_duplikati = 0` uz popis namjerno ostavljenih → S4 (73 spojena, 45 ostavljeno; odluke 400–404)
+- [x] Slug spojenog duplikata: stari URL ne smije dati 404 (redirect ili alias) → S4
 
 - [x] Đakovo Svih Svetih (`kind=dzamija`) blokira `nekatolicke_zupne_crkve = 0` u S2 — S2 ispravlja kind ili čeka S3 → S2
 
